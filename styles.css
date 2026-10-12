@@ -122,14 +122,14 @@ select.bases-serializer-format {
 
 /* Fade the bottom edge while there is more to scroll */
 .bases-serializer-preview.is-scrollable {
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5em), transparent);
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5em), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 3em), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 3em), transparent);
 }
 
 /* Fade both edges once scrolled down */
 .bases-serializer-preview.is-scrollable.is-scrolled {
-  mask-image: linear-gradient(to bottom, transparent, #000 1.5em, #000 calc(100% - 1.5em), transparent);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 1.5em, #000 calc(100% - 1.5em), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 3em, #000 calc(100% - 3em), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 3em, #000 calc(100% - 3em), transparent);
 }
 
 .bases-serializer-preview > :first-child {
