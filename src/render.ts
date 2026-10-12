@@ -34,9 +34,11 @@ export interface RenderOptions {
   headers?: string[];
   template?: string;
   group?: string;
+  groupTemplate?: string;
   properties?: PropertiesMode;
   propertySeparator?: string;
   propertyLabels?: boolean;
+  detailKeys?: string[];
 }
 
 function escapeCell(value: string): string {
@@ -44,6 +46,12 @@ function escapeCell(value: string): string {
     .replace(/\|/g, "\\|")
     .replace(/\r?\n/g, " ")
     .trim();
+}
+
+function lookupValue(values: Record<string, string>, key: string): string {
+  if (key in values) return values[key];
+  const found = Object.keys(values).find((candidate) => candidate.toLowerCase() === key.toLowerCase());
+  return found ? values[found] : "";
 }
 
 function suffixFor(row: SerializedRow, suffixIndex?: number): string {
@@ -67,6 +75,12 @@ export function renderTemplate(template: string, ctx: RowContext): string {
   });
 }
 
+export function renderGroupHeader(template: string, group: string, count: number): string {
+  return template.replace(/\{(\w+)\}/g, (_match, key) =>
+    key === "group" ? group : key === "count" ? String(count) : ""
+  );
+}
+
 function rowContext(row: SerializedRow, index: number, group?: string): RowContext {
   return {
     link: row.link,
@@ -81,6 +95,17 @@ function rowContext(row: SerializedRow, index: number, group?: string): RowConte
 function propertyParts(row: SerializedRow, options: RenderOptions): string[] {
   const mode = options.properties ?? "none";
   if (mode === "none") return [];
+
+  if (options.detailKeys && options.detailKeys.length > 0) {
+    return options.detailKeys
+      .map((key) => {
+        const value = lookupValue(row.values ?? {}, key);
+        if (!value) return "";
+        return options.propertyLabels ? `${key}: ${value}` : value;
+      })
+      .filter(Boolean);
+  }
+
   const headers = options.headers ?? [];
   const parts: string[] = [];
   row.cells.forEach((value, index) => {
@@ -133,7 +158,9 @@ export function renderRows(rows: SerializedRow[], options: RenderOptions = {}): 
 
   if (options.template) {
     return rows
-      .map((row, index) => renderTemplate(options.template as string, rowContext(row, index, options.group)))
+      .map((row, index) =>
+        renderTemplate(options.template as string, rowContext(row, index, options.group))
+      )
       .join("\n");
   }
   if (format === "table") return renderTable(rows, options.headers ?? []);
@@ -141,11 +168,16 @@ export function renderRows(rows: SerializedRow[], options: RenderOptions = {}): 
 }
 
 export function renderGroups(groups: SerializedGroup[], options: RenderOptions = {}): string {
+  const template = options.groupTemplate ?? "### {group}";
   const parts: string[] = [];
   for (const group of groups) {
     const body = renderRows(group.rows, { ...options, group: group.title ?? undefined });
     if (!body) continue;
-    parts.push(group.title ? `### ${group.title}\n\n${body}` : body);
+    if (group.title) {
+      parts.push(`${renderGroupHeader(template, group.title, group.rows.length)}\n\n${body}`);
+    } else {
+      parts.push(body);
+    }
   }
   return parts.join("\n\n");
 }

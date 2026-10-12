@@ -7,6 +7,7 @@ import {
   stripBlock,
   upsertBlock,
   upsertBlockAfterAnchor,
+  upsertBlockUnderHeading,
 } from "../src/sentinels";
 
 describe("sentinelLine", () => {
@@ -92,5 +93,20 @@ describe("solidifyAnchorToText", () => {
     expect(out).not.toContain("bases-serializer");
     expect(out).toContain("- [[new]]");
     expect(out).not.toContain("- [[old]]");
+  });
+});
+
+describe("upsertBlockUnderHeading", () => {
+  it("inserts the block right after the matching heading", () => {
+    const text = "# Note\n\n## Tasks\n\ntail\n";
+    const out = upsertBlockUnderHeading(text, "## Tasks", "K", "- [[A]]");
+    const lines = out.split("\n");
+    const at = lines.findIndex((line) => line.trim() === "## Tasks");
+    expect(lines.slice(at, at + 4).join("\n")).toContain('%% bases-serializer key="K" %%');
+    expect(out).toContain("tail");
+  });
+
+  it("appends when the heading is missing", () => {
+    expect(upsertBlockUnderHeading("# N\n", "## Missing", "K", "- [[A]]")).toContain("- [[A]]");
   });
 });

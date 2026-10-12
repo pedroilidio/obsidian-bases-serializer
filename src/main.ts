@@ -12,9 +12,22 @@ import {
 } from "obsidian";
 
 import { Format, PropertiesMode, RenderOptions, SerializedRow, renderGroups, renderRows } from "./render";
-import { solidifyAnchorToText, stripBlock, upsertBlock, upsertBlockAfterAnchor } from "./sentinels";
+import {
+  solidifyAnchorToText,
+  stripBlock,
+  upsertBlock,
+  upsertBlockAfterAnchor,
+  upsertBlockUnderHeading,
+} from "./sentinels";
+
 const VIEW_TYPE = "bases-serializer";
 const DEFAULT_KEY = "default";
+const FORMATS: Array<[Format, string]> = [
+  ["list", "List"],
+  ["checklist", "Checklist"],
+  ["numbered", "Numbered"],
+  ["table", "Table"],
+];
 
 function countLabel(count: number): string {
   return `${count} row${count === 1 ? "" : "s"}`;
@@ -25,6 +38,7 @@ class SerializerView extends BasesView {
   private buttonEl: HTMLButtonElement;
   private previewEl: HTMLElement;
   private statusEl: HTMLElement;
+  private formatEl: HTMLSelectElement;
   private containerEl: HTMLElement;
   private timer: number | null = null;
 
@@ -39,15 +53,32 @@ class SerializerView extends BasesView {
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
+
+    this.formatEl = toolbar.createEl("select", { cls: "dropdown bases-serializer-format" });
+    for (const [value, label] of FORMATS) {
+      this.formatEl.createEl("option", { text: label, value });
+    }
+    this.formatEl.addEventListener("change", () => {
+      this.config.set("format", this.formatEl.value);
+      this.render();
+    });
+
     const menuButton = toolbar.createEl("button", { text: "▾", cls: "bases-serializer-menu" });
     menuButton.setAttribute("aria-label", "More serialize actions");
     menuButton.addEventListener("click", (event) => this.openMenu(event));
-    this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
 
+    this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview" });
   }
 
   onDataUpdated(): void {
+    this.render();
+  }
+
+  private render(): void {
+    const format = this.format();
+    this.formatEl.value = format;
+
     const body = this.body();
     this.previewEl.empty();
     if (body) {
@@ -59,13 +90,11 @@ class SerializerView extends BasesView {
 
     const { embedded } = this.embedInfo();
     this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
-    this.statusEl.setText(
-      embedded
-        ? `${countLabel(this.data.data.length)} · embedded`
-        : `${countLabel(this.data.data.length)} · set a target note`
-    );
+    const file = this.targetFile(embedded);
+    const where = file ? file.path : embedded ? "no active note" : "no target";
+    this.statusEl.setText(`${countLabel(this.data.data.length)} · ${where}`);
 
-    if (this.config.get("auto") && embedded) {
+    if (Boolean(this.config.get("auto")) && embedded) {
       if (this.timer !== null) window.clearTimeout(this.timer);
       this.timer = window.setTimeout(() => {
         void this.serialize(false);
@@ -77,31 +106,13 @@ class SerializerView extends BasesView {
   private embedInfo(): { embedded: boolean; anchor: string } {
     const embed = this.containerEl.closest(".internal-embed, .markdown-embed");
     if (!embed) return { embedded: false, anchor: "" };
-    // Prefer the innermost element that carries a `src` attribute.
     const withSrc = this.containerEl.closest("[src]") ?? embed;
     const src = withSrc.getAttribute("src") ?? "";
     return { embedded: true, anchor: src.split("/").pop() ?? src };
   }
 
-  private row(entry: BasesEntry): SerializedRow {
-    const order = this.config.getOrder();
-    const cells = order.map((property) => this.cell(entry, property));
-    const values: Record<string, string> = {};
-    order.forEach((property, index) => {
-      values[property] = cells[index];
-      values[this.config.getDisplayName(property)] = cells[index];
-    });
-    return {
-      link: this.link(entry),
-      cells,
-      title: entry.file.basename,
-      path: entry.file.path,
-      values,
-    };
-  }
-
-  private rows(): SerializedRow[] {
-    return this.data.data.map((entry) => this.row(entry));
+  private format(): Format {
+    return ((this.config.get("format") as Format) || "list");
   }
 
   private link(entry: BasesEntry): string {
@@ -122,37 +133,55 @@ class SerializerView extends BasesView {
     return value ? value.toString() : "";
   }
 
+  private row(entry: BasesEntry): SerializedRow {
+    const order = this.config.getOrder();
+    const cells = order.map((property) => this.cell(entry, property));
+    const values: Record<string, string> = {};
+    order.forEach((property, index) => {
+      values[property] = cells[index];
+      values[this.config.getDisplayName(property)] = cells[index];
+    });
+    return { link: this.link(entry), cells, title: entry.file.basename, path: entry.file.path, values };
+  }
+
+  private rows(): SerializedRow[] {
+    return this.data.data.map((entry) => this.row(entry));
+  }
+
   private headers(): string[] {
     return ["File", ...this.config.getOrder().map((property) => this.config.getDisplayName(property))];
   }
 
-  private body(): string {
-    const format = (this.config.get("format") as Format) || "list";
+  private options(): RenderOptions {
+    const format = this.format();
     const order = this.config.getOrder();
-    const suffixProperty = this.config.get("suffix");
-    const template = String(this.config.get("template") || "") || undefined;
+    const suffixProperty = String(this.config.get("suffix") || "");
+    const detailKeys = String(this.config.get("detailKeys") || "")
+      .split(",")
+      .map((key) => key.trim())
+      .filter(Boolean);
 
     let suffixIndex: number | undefined;
-    if (
-      (format === "checklist" || format === "numbered") &&
-      typeof suffixProperty === "string" &&
-      suffixProperty
-    ) {
+    if ((format === "checklist" || format === "numbered") && suffixProperty) {
       const index = order.indexOf(suffixProperty as BasesPropertyId);
       if (index >= 0) suffixIndex = index;
     }
 
-    const headers = this.headers();
-    const options: RenderOptions = {
+    return {
       format,
       suffixIndex,
-      headers,
-      template,
-      properties: (String(this.config.get("props") || "none") as PropertiesMode),
+      headers: this.headers(),
+      template: String(this.config.get("template") || "") || undefined,
+      groupTemplate: String(this.config.get("groupTemplate") || "") || undefined,
+      properties: String(this.config.get("props") || "none") as PropertiesMode,
       propertySeparator: String(this.config.get("propSep") || " · "),
       propertyLabels: Boolean(this.config.get("propLabels")),
+      detailKeys: detailKeys.length > 0 ? detailKeys : undefined,
     };
+  }
 
+  private body(): string {
+    const options = this.options();
     let rendered: string;
 
     if (Boolean(this.config.get("group")) && this.data.groupedData.some((group) => group.hasKey())) {
@@ -165,16 +194,16 @@ class SerializerView extends BasesView {
       rendered = renderRows(this.rows(), options);
     }
 
-    return rendered.trim() ? rendered : String(this.config.get("empty") || "");
+    const content = rendered.trim() ? rendered : String(this.config.get("empty") || "");
+    const preamble = String(this.config.get("preamble") || "").trim();
+    return preamble ? `${preamble}\n\n${content}` : content;
   }
 
   private targetFile(embedded: boolean): TFile | null {
-    // Embedded: write into the note that contains the embed (its `this`).
     if (embedded) {
       const active = this.app.workspace.getActiveFile();
       if (active) return active;
     }
-    // Standalone: use the configured target note.
     const target = String(this.config.get("target") || "").trim();
     if (!target) return null;
     const path = target.endsWith(".md") ? target : `${target}.md`;
@@ -185,23 +214,23 @@ class SerializerView extends BasesView {
   private openMenu(event: MouseEvent): void {
     const menu = new Menu();
     menu.addItem((item) =>
-      item
-        .setTitle("Serialize (keep embed)")
-        .setIcon("file-output")
-        .onClick(() => void this.serialize(true, false))
+      item.setTitle("Keep live view").setIcon("file-output").onClick(() => void this.serialize(true, false))
     );
     menu.addItem((item) =>
       item
-        .setTitle("Serialize & solidify (remove embed + sentinels)")
+        .setTitle("Freeze · replace embed with text")
         .setIcon("file-x")
         .onClick(() => void this.serialize(true, true))
     );
     menu.addSeparator();
     menu.addItem((item) =>
-      item
-        .setTitle("Copy Markdown")
-        .setIcon("copy")
-        .onClick(() => void navigator.clipboard.writeText(this.body()))
+      item.setTitle("Copy Markdown").setIcon("copy").onClick(() => void navigator.clipboard.writeText(this.body()))
+    );
+    menu.addItem((item) =>
+      item.setTitle("Open target note").setIcon("file-symlink").onClick(() => {
+        const file = this.targetFile(this.embedInfo().embedded);
+        if (file) void this.app.workspace.getLeaf(false).openFile(file);
+      })
     );
     menu.addItem((item) =>
       item.setTitle("Remove serialized block").setIcon("trash").onClick(() => void this.removeBlock())
@@ -242,7 +271,12 @@ class SerializerView extends BasesView {
     const solidify = embedded && (solidifyOverride ?? Boolean(this.config.get("solidify")));
 
     await this.app.vault.process(file, (data) => {
-      if (!embedded) return upsertBlock(data, key, body, meta);
+      if (!embedded) {
+        const section = String(this.config.get("section") || "").trim();
+        return section
+          ? upsertBlockUnderHeading(data, section, key, body, meta)
+          : upsertBlock(data, key, body, meta);
+      }
       return solidify
         ? solidifyAnchorToText(data, anchor, key, body)
         : upsertBlockAfterAnchor(data, anchor, key, body, meta);
@@ -262,85 +296,96 @@ export default class BasesSerializerPlugin extends Plugin {
       factory: (controller, containerEl) => new SerializerView(controller, containerEl),
       options: (): BasesAllOptions[] => [
         {
-          type: "file",
-          key: "target",
-          displayName: "Target note (standalone views)",
-          placeholder: "folder/note.md",
+          type: "group",
+          displayName: "Output",
+          items: [
+            {
+              type: "file",
+              key: "target",
+              displayName: "Target note (standalone only)",
+              placeholder: "folder/note.md",
+            },
+            {
+              type: "text",
+              key: "section",
+              displayName: "Section heading (standalone)",
+              placeholder: "## Tasks",
+            },
+            { type: "text", key: "key", displayName: "Sentinel key", placeholder: "default: view name" },
+            {
+              type: "dropdown",
+              key: "format",
+              displayName: "Format",
+              default: "list",
+              options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" },
+            },
+            {
+              type: "dropdown",
+              key: "linkStyle",
+              displayName: "Link style",
+              default: "wikilink",
+              options: {
+                wikilink: "Wikilink [[Note]]",
+                markdown: "Markdown [title](path)",
+                none: "Plain text",
+              },
+            },
+            {
+              type: "text",
+              key: "template",
+              displayName: "Row template (overrides format)",
+              placeholder: "- {link} — {note.due}",
+            },
+            {
+              type: "text",
+              key: "preamble",
+              displayName: "Heading / preamble",
+              placeholder: "## Tasks",
+            },
+          ],
         },
         {
-          type: "text",
-          key: "key",
-          displayName: "Block key",
-          placeholder: "default: view name",
+          type: "group",
+          displayName: "Item details",
+          items: [
+            {
+              type: "dropdown",
+              key: "props",
+              displayName: "Item details",
+              default: "none",
+              options: { none: "Hide", inline: "Inline", subitems: "Sub-items" },
+            },
+            {
+              type: "text",
+              key: "detailKeys",
+              displayName: "Detail properties (empty = all columns)",
+              placeholder: "note.due, status",
+            },
+            { type: "text", key: "propSep", displayName: "Details separator", placeholder: " · " },
+            { type: "toggle", key: "propLabels", displayName: "Label details", default: false },
+            { type: "text", key: "suffix", displayName: "Trailing property", placeholder: "note.due" },
+          ],
         },
         {
-          type: "dropdown",
-          key: "format",
-          displayName: "Format",
-          default: "list",
-          options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" },
-        },
-        {
-          type: "dropdown",
-          key: "linkStyle",
-          displayName: "Link style",
-          default: "wikilink",
-          options: { wikilink: "Wikilink [[Note]]", markdown: "Markdown [title](path)", none: "Plain text" },
-        },
-        {
-          type: "text",
-          key: "template",
-          displayName: "Line template (overrides format)",
-          placeholder: "- {link} — {note.due}",
-        },
-        {
-          type: "text",
-          key: "suffix",
-          displayName: "Suffix property (checklist / numbered)",
-          placeholder: "note.due",
-        },
-        {
-          type: "dropdown",
-          key: "props",
-          displayName: "Properties (list / checklist / numbered)",
-          default: "none",
-          options: { none: "Hide", inline: "Inline", subitems: "Sub-items" },
-        },
-        {
-          type: "text",
-          key: "propSep",
-          displayName: "Property separator",
-          placeholder: " · ",
-        },
-        {
-          type: "toggle",
-          key: "propLabels",
-          displayName: "Show property names",
-          default: false,
-        },
-        {
-          type: "text",
-          key: "empty",
-          displayName: "Empty-state text",
-          placeholder: "e.g. _nothing here_",
-        },
-        {
-          type: "toggle",
-          key: "auto",
-          displayName: "Auto-serialize when embedded",
-          default: false,
-        },
-        {
-          type: "toggle",
-          key: "solidify",
-          displayName: "Fully solidify (remove embed and sentinels)",
-          default: false,
-        },
-        {
-          type: "toggle",
-          key: "group",
-          displayName: "Group headings (from the Base groupBy)",
-          default: true,
+          type: "group",
+          displayName: "Behaviour",
+          items: [
+            {
+              type: "toggle",
+              key: "group",
+              displayName: "Group headings (from the Base groupBy)",
+              default: true,
+            },
+            { type: "text", key: "groupTemplate", displayName: "Group template", placeholder: "### {group} ({count})" },
+            { type: "text", key: "empty", displayName: "No-results text", placeholder: "e.g. _nothing here_" },
+            { type: "toggle", key: "auto", displayName: "Auto-serialize when embedded", default: false },
+            {
+              type: "toggle",
+              key: "solidify",
+              displayName: "Replace embed with static text (freeze)",
+              default: false,
+            },
+          ],
         },
       ],
     });

@@ -120,3 +120,36 @@ export function solidifyAnchorToText(
   const separator = trimmed === "" ? "" : "\n\n";
   return `${trimmed}${separator}${bodyLines.join("\n")}\n`;
 }
+
+/**
+ * Upsert a block directly under a heading (matched by title), falling back to
+ * appending at the end when the heading is missing.
+ */
+export function upsertBlockUnderHeading(
+  text: string,
+  heading: string,
+  key: string,
+  body: string,
+  meta: SentinelMeta = {}
+): string {
+  const lines = text.split("\n");
+  const block = [sentinelLine(key, meta), body.replace(/\n+$/, ""), SENTINEL_CLOSE];
+
+  const range = findBlock(lines, key);
+  if (range !== null) {
+    return [...lines.slice(0, range[0]), ...block, ...lines.slice(range[1] + 1)].join("\n");
+  }
+
+  const want = heading.replace(/^#+\s*/, "").trim().toLowerCase();
+  const at = lines.findIndex((line) => {
+    const match = line.match(/^#{1,6}\s+(.*?)\s*$/);
+    return match !== null && match[1].toLowerCase() === want;
+  });
+  if (at >= 0) {
+    return [...lines.slice(0, at + 1), "", ...block, "", ...lines.slice(at + 1)].join("\n");
+  }
+
+  const trimmed = text.replace(/\n+$/, "");
+  const separator = trimmed === "" ? "" : "\n\n";
+  return `${trimmed}${separator}${block.join("\n")}\n`;
+}

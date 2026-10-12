@@ -32,6 +32,11 @@ var import_obsidian = require("obsidian");
 function escapeCell(value) {
   return String(value != null ? value : "").replace(/\|/g, "\\|").replace(/\r?\n/g, " ").trim();
 }
+function lookupValue(values, key) {
+  if (key in values) return values[key];
+  const found = Object.keys(values).find((candidate) => candidate.toLowerCase() === key.toLowerCase());
+  return found ? values[found] : "";
+}
 function suffixFor(row, suffixIndex) {
   return suffixIndex !== void 0 && row.cells[suffixIndex] ? ` \u2014 ${row.cells[suffixIndex]}` : "";
 }
@@ -51,6 +56,12 @@ function renderTemplate(template, ctx) {
     return found ? table[found] : "";
   });
 }
+function renderGroupHeader(template, group, count) {
+  return template.replace(
+    /\{(\w+)\}/g,
+    (_match, key) => key === "group" ? group : key === "count" ? String(count) : ""
+  );
+}
 function rowContext(row, index, group) {
   var _a, _b, _c;
   return {
@@ -66,6 +77,14 @@ function propertyParts(row, options) {
   var _a, _b;
   const mode = (_a = options.properties) != null ? _a : "none";
   if (mode === "none") return [];
+  if (options.detailKeys && options.detailKeys.length > 0) {
+    return options.detailKeys.map((key) => {
+      var _a2;
+      const value = lookupValue((_a2 = row.values) != null ? _a2 : {}, key);
+      if (!value) return "";
+      return options.propertyLabels ? `${key}: ${value}` : value;
+    }).filter(Boolean);
+  }
   const headers = (_b = options.headers) != null ? _b : [];
   const parts = [];
   row.cells.forEach((value, index) => {
@@ -111,20 +130,27 @@ function renderRows(rows, options = {}) {
   if (rows.length === 0) return "";
   const format = (_a = options.format) != null ? _a : "list";
   if (options.template) {
-    return rows.map((row, index) => renderTemplate(options.template, rowContext(row, index, options.group))).join("\n");
+    return rows.map(
+      (row, index) => renderTemplate(options.template, rowContext(row, index, options.group))
+    ).join("\n");
   }
   if (format === "table") return renderTable(rows, (_b = options.headers) != null ? _b : []);
   return rows.map((row, index) => renderRow(row, index, options)).join("\n");
 }
 function renderGroups(groups, options = {}) {
-  var _a;
+  var _a, _b;
+  const template = (_a = options.groupTemplate) != null ? _a : "### {group}";
   const parts = [];
   for (const group of groups) {
-    const body = renderRows(group.rows, { ...options, group: (_a = group.title) != null ? _a : void 0 });
+    const body = renderRows(group.rows, { ...options, group: (_b = group.title) != null ? _b : void 0 });
     if (!body) continue;
-    parts.push(group.title ? `### ${group.title}
+    if (group.title) {
+      parts.push(`${renderGroupHeader(template, group.title, group.rows.length)}
 
-${body}` : body);
+${body}`);
+    } else {
+      parts.push(body);
+    }
   }
   return parts.join("\n\n");
 }
@@ -208,10 +234,36 @@ function solidifyAnchorToText(text, anchor, key, body) {
   return `${trimmed}${separator}${bodyLines.join("\n")}
 `;
 }
+function upsertBlockUnderHeading(text, heading, key, body, meta = {}) {
+  const lines = text.split("\n");
+  const block = [sentinelLine(key, meta), body.replace(/\n+$/, ""), SENTINEL_CLOSE];
+  const range = findBlock(lines, key);
+  if (range !== null) {
+    return [...lines.slice(0, range[0]), ...block, ...lines.slice(range[1] + 1)].join("\n");
+  }
+  const want = heading.replace(/^#+\s*/, "").trim().toLowerCase();
+  const at = lines.findIndex((line) => {
+    const match = line.match(/^#{1,6}\s+(.*?)\s*$/);
+    return match !== null && match[1].toLowerCase() === want;
+  });
+  if (at >= 0) {
+    return [...lines.slice(0, at + 1), "", ...block, "", ...lines.slice(at + 1)].join("\n");
+  }
+  const trimmed = text.replace(/\n+$/, "");
+  const separator = trimmed === "" ? "" : "\n\n";
+  return `${trimmed}${separator}${block.join("\n")}
+`;
+}
 
 // src/main.ts
 var VIEW_TYPE = "bases-serializer";
 var DEFAULT_KEY = "default";
+var FORMATS = [
+  ["list", "List"],
+  ["checklist", "Checklist"],
+  ["numbered", "Numbered"],
+  ["table", "Table"]
+];
 function countLabel(count) {
   return `${count} row${count === 1 ? "" : "s"}`;
 }
@@ -228,6 +280,14 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
+    this.formatEl = toolbar.createEl("select", { cls: "dropdown bases-serializer-format" });
+    for (const [value, label] of FORMATS) {
+      this.formatEl.createEl("option", { text: label, value });
+    }
+    this.formatEl.addEventListener("change", () => {
+      this.config.set("format", this.formatEl.value);
+      this.render();
+    });
     const menuButton = toolbar.createEl("button", { text: "\u25BE", cls: "bases-serializer-menu" });
     menuButton.setAttribute("aria-label", "More serialize actions");
     menuButton.addEventListener("click", (event) => this.openMenu(event));
@@ -235,7 +295,12 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview" });
   }
   onDataUpdated() {
+    this.render();
+  }
+  render() {
     var _a, _b;
+    const format = this.format();
+    this.formatEl.value = format;
     const body = this.body();
     this.previewEl.empty();
     if (body) {
@@ -246,10 +311,10 @@ var SerializerView = class extends import_obsidian.BasesView {
     }
     const { embedded } = this.embedInfo();
     this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
-    this.statusEl.setText(
-      embedded ? `${countLabel(this.data.data.length)} \xB7 embedded` : `${countLabel(this.data.data.length)} \xB7 set a target note`
-    );
-    if (this.config.get("auto") && embedded) {
+    const file = this.targetFile(embedded);
+    const where = file ? file.path : embedded ? "no active note" : "no target";
+    this.statusEl.setText(`${countLabel(this.data.data.length)} \xB7 ${where}`);
+    if (Boolean(this.config.get("auto")) && embedded) {
       if (this.timer !== null) window.clearTimeout(this.timer);
       this.timer = window.setTimeout(() => {
         void this.serialize(false);
@@ -265,24 +330,8 @@ var SerializerView = class extends import_obsidian.BasesView {
     const src = (_b = withSrc.getAttribute("src")) != null ? _b : "";
     return { embedded: true, anchor: (_c = src.split("/").pop()) != null ? _c : src };
   }
-  row(entry) {
-    const order = this.config.getOrder();
-    const cells = order.map((property) => this.cell(entry, property));
-    const values = {};
-    order.forEach((property, index) => {
-      values[property] = cells[index];
-      values[this.config.getDisplayName(property)] = cells[index];
-    });
-    return {
-      link: this.link(entry),
-      cells,
-      title: entry.file.basename,
-      path: entry.file.path,
-      values
-    };
-  }
-  rows() {
-    return this.data.data.map((entry) => this.row(entry));
+  format() {
+    return this.config.get("format") || "list";
   }
   link(entry) {
     const style = String(this.config.get("linkStyle") || "wikilink");
@@ -300,29 +349,46 @@ var SerializerView = class extends import_obsidian.BasesView {
     const value = entry.getValue(property);
     return value ? value.toString() : "";
   }
+  row(entry) {
+    const order = this.config.getOrder();
+    const cells = order.map((property) => this.cell(entry, property));
+    const values = {};
+    order.forEach((property, index) => {
+      values[property] = cells[index];
+      values[this.config.getDisplayName(property)] = cells[index];
+    });
+    return { link: this.link(entry), cells, title: entry.file.basename, path: entry.file.path, values };
+  }
+  rows() {
+    return this.data.data.map((entry) => this.row(entry));
+  }
   headers() {
     return ["File", ...this.config.getOrder().map((property) => this.config.getDisplayName(property))];
   }
-  body() {
-    const format = this.config.get("format") || "list";
+  options() {
+    const format = this.format();
     const order = this.config.getOrder();
-    const suffixProperty = this.config.get("suffix");
-    const template = String(this.config.get("template") || "") || void 0;
+    const suffixProperty = String(this.config.get("suffix") || "");
+    const detailKeys = String(this.config.get("detailKeys") || "").split(",").map((key) => key.trim()).filter(Boolean);
     let suffixIndex;
-    if ((format === "checklist" || format === "numbered") && typeof suffixProperty === "string" && suffixProperty) {
+    if ((format === "checklist" || format === "numbered") && suffixProperty) {
       const index = order.indexOf(suffixProperty);
       if (index >= 0) suffixIndex = index;
     }
-    const headers = this.headers();
-    const options = {
+    return {
       format,
       suffixIndex,
-      headers,
-      template,
+      headers: this.headers(),
+      template: String(this.config.get("template") || "") || void 0,
+      groupTemplate: String(this.config.get("groupTemplate") || "") || void 0,
       properties: String(this.config.get("props") || "none"),
       propertySeparator: String(this.config.get("propSep") || " \xB7 "),
-      propertyLabels: Boolean(this.config.get("propLabels"))
+      propertyLabels: Boolean(this.config.get("propLabels")),
+      detailKeys: detailKeys.length > 0 ? detailKeys : void 0
     };
+  }
+  body() {
+    const options = this.options();
     let rendered;
     if (Boolean(this.config.get("group")) && this.data.groupedData.some((group) => group.hasKey())) {
       const groups = this.data.groupedData.map((group) => ({
@@ -333,7 +399,11 @@ var SerializerView = class extends import_obsidian.BasesView {
     } else {
       rendered = renderRows(this.rows(), options);
     }
-    return rendered.trim() ? rendered : String(this.config.get("empty") || "");
+    const content = rendered.trim() ? rendered : String(this.config.get("empty") || "");
+    const preamble = String(this.config.get("preamble") || "").trim();
+    return preamble ? `${preamble}
+
+${content}` : content;
   }
   targetFile(embedded) {
     if (embedded) {
@@ -349,14 +419,20 @@ var SerializerView = class extends import_obsidian.BasesView {
   openMenu(event) {
     const menu = new import_obsidian.Menu();
     menu.addItem(
-      (item) => item.setTitle("Serialize (keep embed)").setIcon("file-output").onClick(() => void this.serialize(true, false))
+      (item) => item.setTitle("Keep live view").setIcon("file-output").onClick(() => void this.serialize(true, false))
     );
     menu.addItem(
-      (item) => item.setTitle("Serialize & solidify (remove embed + sentinels)").setIcon("file-x").onClick(() => void this.serialize(true, true))
+      (item) => item.setTitle("Freeze \xB7 replace embed with text").setIcon("file-x").onClick(() => void this.serialize(true, true))
     );
     menu.addSeparator();
     menu.addItem(
       (item) => item.setTitle("Copy Markdown").setIcon("copy").onClick(() => void navigator.clipboard.writeText(this.body()))
+    );
+    menu.addItem(
+      (item) => item.setTitle("Open target note").setIcon("file-symlink").onClick(() => {
+        const file = this.targetFile(this.embedInfo().embedded);
+        if (file) void this.app.workspace.getLeaf(false).openFile(file);
+      })
     );
     menu.addItem(
       (item) => item.setTitle("Remove serialized block").setIcon("trash").onClick(() => void this.removeBlock())
@@ -390,7 +466,10 @@ var SerializerView = class extends import_obsidian.BasesView {
     const meta = { format: String(this.config.get("format") || "list") };
     const solidify = embedded && (solidifyOverride != null ? solidifyOverride : Boolean(this.config.get("solidify")));
     await this.app.vault.process(file, (data) => {
-      if (!embedded) return upsertBlock(data, key, body, meta);
+      if (!embedded) {
+        const section = String(this.config.get("section") || "").trim();
+        return section ? upsertBlockUnderHeading(data, section, key, body, meta) : upsertBlock(data, key, body, meta);
+      }
       return solidify ? solidifyAnchorToText(data, anchor, key, body) : upsertBlockAfterAnchor(data, anchor, key, body, meta);
     });
     if (notify) {
@@ -406,85 +485,96 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
       factory: (controller, containerEl) => new SerializerView(controller, containerEl),
       options: () => [
         {
-          type: "file",
-          key: "target",
-          displayName: "Target note (standalone views)",
-          placeholder: "folder/note.md"
+          type: "group",
+          displayName: "Output",
+          items: [
+            {
+              type: "file",
+              key: "target",
+              displayName: "Target note (standalone only)",
+              placeholder: "folder/note.md"
+            },
+            {
+              type: "text",
+              key: "section",
+              displayName: "Section heading (standalone)",
+              placeholder: "## Tasks"
+            },
+            { type: "text", key: "key", displayName: "Sentinel key", placeholder: "default: view name" },
+            {
+              type: "dropdown",
+              key: "format",
+              displayName: "Format",
+              default: "list",
+              options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" }
+            },
+            {
+              type: "dropdown",
+              key: "linkStyle",
+              displayName: "Link style",
+              default: "wikilink",
+              options: {
+                wikilink: "Wikilink [[Note]]",
+                markdown: "Markdown [title](path)",
+                none: "Plain text"
+              }
+            },
+            {
+              type: "text",
+              key: "template",
+              displayName: "Row template (overrides format)",
+              placeholder: "- {link} \u2014 {note.due}"
+            },
+            {
+              type: "text",
+              key: "preamble",
+              displayName: "Heading / preamble",
+              placeholder: "## Tasks"
+            }
+          ]
         },
         {
-          type: "text",
-          key: "key",
-          displayName: "Block key",
-          placeholder: "default: view name"
+          type: "group",
+          displayName: "Item details",
+          items: [
+            {
+              type: "dropdown",
+              key: "props",
+              displayName: "Item details",
+              default: "none",
+              options: { none: "Hide", inline: "Inline", subitems: "Sub-items" }
+            },
+            {
+              type: "text",
+              key: "detailKeys",
+              displayName: "Detail properties (empty = all columns)",
+              placeholder: "note.due, status"
+            },
+            { type: "text", key: "propSep", displayName: "Details separator", placeholder: " \xB7 " },
+            { type: "toggle", key: "propLabels", displayName: "Label details", default: false },
+            { type: "text", key: "suffix", displayName: "Trailing property", placeholder: "note.due" }
+          ]
         },
         {
-          type: "dropdown",
-          key: "format",
-          displayName: "Format",
-          default: "list",
-          options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" }
-        },
-        {
-          type: "dropdown",
-          key: "linkStyle",
-          displayName: "Link style",
-          default: "wikilink",
-          options: { wikilink: "Wikilink [[Note]]", markdown: "Markdown [title](path)", none: "Plain text" }
-        },
-        {
-          type: "text",
-          key: "template",
-          displayName: "Line template (overrides format)",
-          placeholder: "- {link} \u2014 {note.due}"
-        },
-        {
-          type: "text",
-          key: "suffix",
-          displayName: "Suffix property (checklist / numbered)",
-          placeholder: "note.due"
-        },
-        {
-          type: "dropdown",
-          key: "props",
-          displayName: "Properties (list / checklist / numbered)",
-          default: "none",
-          options: { none: "Hide", inline: "Inline", subitems: "Sub-items" }
-        },
-        {
-          type: "text",
-          key: "propSep",
-          displayName: "Property separator",
-          placeholder: " \xB7 "
-        },
-        {
-          type: "toggle",
-          key: "propLabels",
-          displayName: "Show property names",
-          default: false
-        },
-        {
-          type: "text",
-          key: "empty",
-          displayName: "Empty-state text",
-          placeholder: "e.g. _nothing here_"
-        },
-        {
-          type: "toggle",
-          key: "auto",
-          displayName: "Auto-serialize when embedded",
-          default: false
-        },
-        {
-          type: "toggle",
-          key: "solidify",
-          displayName: "Fully solidify (remove embed and sentinels)",
-          default: false
-        },
-        {
-          type: "toggle",
-          key: "group",
-          displayName: "Group headings (from the Base groupBy)",
-          default: true
+          type: "group",
+          displayName: "Behaviour",
+          items: [
+            {
+              type: "toggle",
+              key: "group",
+              displayName: "Group headings (from the Base groupBy)",
+              default: true
+            },
+            { type: "text", key: "groupTemplate", displayName: "Group template", placeholder: "### {group} ({count})" },
+            { type: "text", key: "empty", displayName: "No-results text", placeholder: "e.g. _nothing here_" },
+            { type: "toggle", key: "auto", displayName: "Auto-serialize when embedded", default: false },
+            {
+              type: "toggle",
+              key: "solidify",
+              displayName: "Replace embed with static text (freeze)",
+              default: false
+            }
+          ]
         }
       ]
     });

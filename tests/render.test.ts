@@ -100,4 +100,30 @@ describe("renderGroups", () => {
     expect(out).toContain("- [[B]]");
     expect(out).not.toContain("Empty");
   });
+
+  it("uses a group template with {group} and {count}", () => {
+    const out = renderGroups(
+      [{ title: "Today", rows: [{ link: "[[A]]", cells: [] }] }],
+      { format: "list", groupTemplate: "## {group} ({count})" }
+    );
+    expect(out).toContain("## Today (1)");
+  });
+});
+
+describe("detailKeys", () => {
+  const row: SerializedRow = {
+    link: "[[A]]",
+    cells: ["x", "y"],
+    values: { "note.due": "x", Status: "y" },
+  };
+
+  it("limits details to the selected keys (case-insensitive)", () => {
+    const out = renderRows([row], {
+      format: "list",
+      properties: "inline",
+      detailKeys: ["status"],
+      propertyLabels: true,
+    });
+    expect(out).toBe("- [[A]] · status: y");
+  });
 });
