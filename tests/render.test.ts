@@ -1,0 +1,37 @@
+import { describe, expect, it } from "vitest";
+
+import { renderRows, renderTable, SerializedRow } from "../src/render";
+
+const rows: SerializedRow[] = [
+  { link: "[[A]]", cells: ["2026-10-13", "open"] },
+  { link: "[[B]]", cells: ["", "done"] },
+];
+
+describe("renderRows", () => {
+  it("renders a list", () => {
+    expect(renderRows(rows, "list")).toBe("- [[A]]\n- [[B]]");
+  });
+
+  it("renders a checklist with an optional suffix column", () => {
+    expect(renderRows(rows, "checklist", 0)).toBe("- [ ] [[A]] — 2026-10-13\n- [ ] [[B]]");
+  });
+
+  it("returns an empty string for no rows", () => {
+    expect(renderRows([], "list")).toBe("");
+  });
+});
+
+describe("renderTable", () => {
+  it("uses provided headers", () => {
+    const table = renderTable(rows, ["File", "Due", "Status"]);
+    const lines = table.split("\n");
+    expect(lines[0]).toBe("| File | Due | Status |");
+    expect(lines[1]).toBe("| --- | --- | --- |");
+    expect(lines[2]).toBe("| [[A]] | 2026-10-13 | open |");
+  });
+
+  it("escapes pipes in cells", () => {
+    const table = renderTable([{ link: "[[A]]", cells: ["a|b"] }], ["File", "X"]);
+    expect(table).toContain("a\\|b");
+  });
+});
