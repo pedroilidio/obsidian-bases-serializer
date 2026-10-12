@@ -237,7 +237,7 @@ var SerializerView = class extends import_obsidian.BasesView {
   openMenu(event) {
     const menu = new import_obsidian.Menu();
     menu.addItem(
-      (item) => item.setTitle("Serialize").setIcon("file-output").onClick(() => void this.serialize(true))
+      (item) => item.setTitle("Serialize (keep embed)").setIcon("file-output").onClick(() => void this.serialize(true, false))
     );
     menu.addItem(
       (item) => item.setTitle("Serialize & solidify (remove embed + sentinels)").setIcon("file-x").onClick(() => void this.serialize(true, true))

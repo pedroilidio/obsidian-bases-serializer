@@ -34,11 +34,13 @@ If the base is open as its own tab, set a **Target note** in the view options an
 - **Fully solidify (remove embed and sentinels)** — replace the live `![[base#view]]` with plain Markdown (no embed, no sentinel comments), so the note is fully static (default off).
 
 ### Button menu
-Next to **Serialize** there's a **▾** menu with quick one-off actions:
-- **Serialize** (uses the view options)
-- **Serialize & solidify** (remove the embed + sentinels this time)
+Next to **Serialize** there's a **▾** menu with one-off actions that override the view options:
+- **Serialize (keep embed)** — keeps the embed + sentinels (even if the "fully solidify" option is on)
+- **Serialize & solidify (remove embed + sentinels)** — fully solidifies this time
 - **Copy Markdown**
 - **Remove serialized block**
+
+The main **Serialize** button follows the persisted options; the menu items are explicit one-off overrides.
 
 ## Output format
 

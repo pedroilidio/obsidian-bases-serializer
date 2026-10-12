@@ -140,7 +140,10 @@ class SerializerView extends BasesView {
   private openMenu(event: MouseEvent): void {
     const menu = new Menu();
     menu.addItem((item) =>
-      item.setTitle("Serialize").setIcon("file-output").onClick(() => void this.serialize(true))
+      item
+        .setTitle("Serialize (keep embed)")
+        .setIcon("file-output")
+        .onClick(() => void this.serialize(true, false))
     );
     menu.addItem((item) =>
       item
