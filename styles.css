@@ -18,8 +18,11 @@
 .bases-serializer-split > button,
 select.bases-serializer-format {
   height: var(--input-height, 30px);
-  padding: 0 var(--size-4-2);
   font-size: var(--font-ui-small);
+}
+
+.bases-serializer-split > button {
+  padding: 0 var(--size-4-2);
   line-height: 1;
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
@@ -75,8 +78,6 @@ select.bases-serializer-format {
 
 select.bases-serializer-format {
   max-width: 9em;
-  background-color: var(--background-modifier-form-field);
-  border: 1px solid var(--background-modifier-border);
 }
 
 .bases-serializer-status {
