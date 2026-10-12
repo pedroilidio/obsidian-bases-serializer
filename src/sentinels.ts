@@ -91,3 +91,33 @@ export function upsertBlockAfterAnchor(
   const separator = trimmed === "" ? "" : "\n\n";
   return `${trimmed}${separator}${block.join("\n")}\n`;
 }
+
+/**
+ * Upsert a block in place of the embed line (fully solidify: the live
+ * `![[base#view]]` is replaced by the frozen block).
+ */
+export function upsertBlockReplacingAnchor(
+  text: string,
+  anchor: string,
+  key: string,
+  body: string,
+  meta: SentinelMeta = {}
+): string {
+  const lines = text.split("\n");
+  const block = [sentinelLine(key, meta), body.replace(/\n+$/, ""), SENTINEL_CLOSE];
+
+  const range = findBlock(lines, key);
+  const working =
+    range !== null ? [...lines.slice(0, range[0]), ...lines.slice(range[1] + 1)] : lines.slice();
+
+  if (anchor) {
+    const at = working.findIndex((line) => line.includes(anchor));
+    if (at >= 0) {
+      return [...working.slice(0, at), ...block, ...working.slice(at + 1)].join("\n");
+    }
+  }
+
+  const trimmed = working.join("\n").replace(/\n+$/, "");
+  const separator = trimmed === "" ? "" : "\n\n";
+  return `${trimmed}${separator}${block.join("\n")}\n`;
+}

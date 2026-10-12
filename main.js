@@ -112,6 +112,22 @@ function upsertBlockAfterAnchor(text, anchor, key, body, meta = {}) {
   return `${trimmed}${separator}${block.join("\n")}
 `;
 }
+function upsertBlockReplacingAnchor(text, anchor, key, body, meta = {}) {
+  const lines = text.split("\n");
+  const block = [sentinelLine(key, meta), body.replace(/\n+$/, ""), SENTINEL_CLOSE];
+  const range = findBlock(lines, key);
+  const working = range !== null ? [...lines.slice(0, range[0]), ...lines.slice(range[1] + 1)] : lines.slice();
+  if (anchor) {
+    const at = working.findIndex((line) => line.includes(anchor));
+    if (at >= 0) {
+      return [...working.slice(0, at), ...block, ...working.slice(at + 1)].join("\n");
+    }
+  }
+  const trimmed = working.join("\n").replace(/\n+$/, "");
+  const separator = trimmed === "" ? "" : "\n\n";
+  return `${trimmed}${separator}${block.join("\n")}
+`;
+}
 
 // src/main.ts
 var VIEW_TYPE = "bases-serializer";
@@ -223,10 +239,11 @@ var SerializerView = class extends import_obsidian.BasesView {
     const key = String(this.config.get("key") || this.config.name || DEFAULT_KEY);
     const body = this.body();
     const meta = { format: String(this.config.get("format") || "list") };
-    await this.app.vault.process(
-      file,
-      (data) => embedded ? upsertBlockAfterAnchor(data, anchor, key, body, meta) : upsertBlock(data, key, body, meta)
-    );
+    const replaceEmbed = Boolean(this.config.get("replaceEmbed"));
+    await this.app.vault.process(file, (data) => {
+      if (!embedded) return upsertBlock(data, key, body, meta);
+      return replaceEmbed ? upsertBlockReplacingAnchor(data, anchor, key, body, meta) : upsertBlockAfterAnchor(data, anchor, key, body, meta);
+    });
     if (notify) {
       new import_obsidian.Notice(`Bases Serializer: ${countLabel(this.data.data.length)} \u2192 ${file.path}`);
     }
@@ -268,6 +285,12 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
           type: "toggle",
           key: "auto",
           displayName: "Auto-serialize when embedded",
+          default: false
+        },
+        {
+          type: "toggle",
+          key: "replaceEmbed",
+          displayName: "Remove the embed after serializing",
           default: false
         }
       ]

@@ -6,6 +6,7 @@ import {
   stripBlock,
   upsertBlock,
   upsertBlockAfterAnchor,
+  upsertBlockReplacingAnchor,
 } from "../src/sentinels";
 
 describe("sentinelLine", () => {
@@ -72,5 +73,15 @@ describe("upsertBlockAfterAnchor", () => {
   it("appends when the anchor is missing", () => {
     const out = upsertBlockAfterAnchor("# Note\n", "missing.base#X", "K", "- [[A]]");
     expect(out).toContain("- [[A]]");
+  });
+});
+
+describe("upsertBlockReplacingAnchor", () => {
+  it("replaces the embed line with the block", () => {
+    const text = "# Note\n\n![[tasks.base#Today]]\n\ntail\n";
+    const out = upsertBlockReplacingAnchor(text, "tasks.base#Today", "Today", "- [[A]]");
+    expect(out).not.toContain("![[tasks.base#Today]]");
+    expect(out).toContain('%% bases-serializer key="Today" %%');
+    expect(out).toContain("tail");
   });
 });

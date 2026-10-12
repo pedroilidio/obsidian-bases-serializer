@@ -11,7 +11,7 @@ import {
 } from "obsidian";
 
 import { Format, SerializedRow, renderRows } from "./render";
-import { upsertBlock, upsertBlockAfterAnchor } from "./sentinels";
+import { upsertBlock, upsertBlockAfterAnchor, upsertBlockReplacingAnchor } from "./sentinels";
 
 const VIEW_TYPE = "bases-serializer";
 const DEFAULT_KEY = "default";
@@ -150,12 +150,14 @@ class SerializerView extends BasesView {
     const key = String(this.config.get("key") || this.config.name || DEFAULT_KEY);
     const body = this.body();
     const meta = { format: String(this.config.get("format") || "list") };
+    const replaceEmbed = Boolean(this.config.get("replaceEmbed"));
 
-    await this.app.vault.process(file, (data) =>
-      embedded
-        ? upsertBlockAfterAnchor(data, anchor, key, body, meta)
-        : upsertBlock(data, key, body, meta)
-    );
+    await this.app.vault.process(file, (data) => {
+      if (!embedded) return upsertBlock(data, key, body, meta);
+      return replaceEmbed
+        ? upsertBlockReplacingAnchor(data, anchor, key, body, meta)
+        : upsertBlockAfterAnchor(data, anchor, key, body, meta);
+    });
 
     if (notify) {
       new Notice(`Bases Serializer: ${countLabel(this.data.data.length)} → ${file.path}`);
@@ -199,6 +201,12 @@ export default class BasesSerializerPlugin extends Plugin {
           type: "toggle",
           key: "auto",
           displayName: "Auto-serialize when embedded",
+          default: false,
+        },
+        {
+          type: "toggle",
+          key: "replaceEmbed",
+          displayName: "Remove the embed after serializing",
           default: false,
         },
       ],
