@@ -297,21 +297,26 @@ export default class BasesSerializerPlugin extends Plugin {
       options: (): BasesAllOptions[] => [
         {
           type: "group",
-          displayName: "Output",
+          displayName: "Standalone",
           items: [
             {
               type: "file",
               key: "target",
-              displayName: "Target note (standalone only)",
+              displayName: "Target note",
               placeholder: "folder/note.md",
             },
             {
               type: "text",
               key: "section",
-              displayName: "Section heading (standalone)",
+              displayName: "Section heading",
               placeholder: "## Tasks",
             },
-            { type: "text", key: "key", displayName: "Sentinel key", placeholder: "default: view name" },
+          ],
+        },
+        {
+          type: "group",
+          displayName: "Output",
+          items: [
             {
               type: "dropdown",
               key: "format",
@@ -333,7 +338,7 @@ export default class BasesSerializerPlugin extends Plugin {
             {
               type: "text",
               key: "template",
-              displayName: "Row template (overrides format)",
+              displayName: "Row template",
               placeholder: "- {link} — {note.due}",
             },
             {
@@ -342,6 +347,7 @@ export default class BasesSerializerPlugin extends Plugin {
               displayName: "Heading / preamble",
               placeholder: "## Tasks",
             },
+            { type: "text", key: "key", displayName: "Sentinel key", placeholder: "default: view name" },
           ],
         },
         {
@@ -358,11 +364,11 @@ export default class BasesSerializerPlugin extends Plugin {
             {
               type: "text",
               key: "detailKeys",
-              displayName: "Detail properties (empty = all columns)",
-              placeholder: "note.due, status",
+              displayName: "Detail properties",
+              placeholder: "note.due, status (empty = all columns)",
             },
             { type: "text", key: "propSep", displayName: "Details separator", placeholder: " · " },
-            { type: "toggle", key: "propLabels", displayName: "Label details", default: false },
+            { type: "toggle", key: "propLabels", displayName: "Show property names", default: false },
             { type: "text", key: "suffix", displayName: "Trailing property", placeholder: "note.due" },
           ],
         },
@@ -373,16 +379,16 @@ export default class BasesSerializerPlugin extends Plugin {
             {
               type: "toggle",
               key: "group",
-              displayName: "Group headings (from the Base groupBy)",
+              displayName: "Group headings",
               default: true,
             },
             { type: "text", key: "groupTemplate", displayName: "Group template", placeholder: "### {group} ({count})" },
             { type: "text", key: "empty", displayName: "No-results text", placeholder: "e.g. _nothing here_" },
-            { type: "toggle", key: "auto", displayName: "Auto-serialize when embedded", default: false },
+            { type: "toggle", key: "auto", displayName: "Auto-serialize (embedded)", default: false },
             {
               type: "toggle",
               key: "solidify",
-              displayName: "Replace embed with static text (freeze)",
+              displayName: "Freeze (replace embed with text)",
               default: false,
             },
           ],

@@ -486,21 +486,26 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
       options: () => [
         {
           type: "group",
-          displayName: "Output",
+          displayName: "Standalone",
           items: [
             {
               type: "file",
               key: "target",
-              displayName: "Target note (standalone only)",
+              displayName: "Target note",
               placeholder: "folder/note.md"
             },
             {
               type: "text",
               key: "section",
-              displayName: "Section heading (standalone)",
+              displayName: "Section heading",
               placeholder: "## Tasks"
-            },
-            { type: "text", key: "key", displayName: "Sentinel key", placeholder: "default: view name" },
+            }
+          ]
+        },
+        {
+          type: "group",
+          displayName: "Output",
+          items: [
             {
               type: "dropdown",
               key: "format",
@@ -522,7 +527,7 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
             {
               type: "text",
               key: "template",
-              displayName: "Row template (overrides format)",
+              displayName: "Row template",
               placeholder: "- {link} \u2014 {note.due}"
             },
             {
@@ -530,7 +535,8 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
               key: "preamble",
               displayName: "Heading / preamble",
               placeholder: "## Tasks"
-            }
+            },
+            { type: "text", key: "key", displayName: "Sentinel key", placeholder: "default: view name" }
           ]
         },
         {
@@ -547,11 +553,11 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
             {
               type: "text",
               key: "detailKeys",
-              displayName: "Detail properties (empty = all columns)",
-              placeholder: "note.due, status"
+              displayName: "Detail properties",
+              placeholder: "note.due, status (empty = all columns)"
             },
             { type: "text", key: "propSep", displayName: "Details separator", placeholder: " \xB7 " },
-            { type: "toggle", key: "propLabels", displayName: "Label details", default: false },
+            { type: "toggle", key: "propLabels", displayName: "Show property names", default: false },
             { type: "text", key: "suffix", displayName: "Trailing property", placeholder: "note.due" }
           ]
         },
@@ -562,16 +568,16 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
             {
               type: "toggle",
               key: "group",
-              displayName: "Group headings (from the Base groupBy)",
+              displayName: "Group headings",
               default: true
             },
             { type: "text", key: "groupTemplate", displayName: "Group template", placeholder: "### {group} ({count})" },
             { type: "text", key: "empty", displayName: "No-results text", placeholder: "e.g. _nothing here_" },
-            { type: "toggle", key: "auto", displayName: "Auto-serialize when embedded", default: false },
+            { type: "toggle", key: "auto", displayName: "Auto-serialize (embedded)", default: false },
             {
               type: "toggle",
               key: "solidify",
-              displayName: "Replace embed with static text (freeze)",
+              displayName: "Freeze (replace embed with text)",
               default: false
             }
           ]

@@ -26,28 +26,30 @@ This keeps the snapshot next to the query it came from — the base's `this`.
 If the base is open as its own tab, set a **Target note** in the view options and click **Serialize now** (the block is appended to that note).
 
 ### View options (grouped)
+**Standalone**
+- **Target note** — where to write when the view isn't embedded.
+- **Section heading** — write the block under this heading in the target note (creates it if missing).
+
 **Output**
-- **Target note (standalone only)** — where to write when the view isn't embedded.
-- **Section heading (standalone)** — write the block under this heading in the target note (creates it if missing).
-- **Sentinel key** — key for the block (defaults to the view name).
 - **Format** — `List`, `Checklist`, `Numbered`, or `Table`.
 - **Link style** — `Wikilink [[Note]]` (default), `Markdown [title](path)`, or `Plain text`.
-- **Row template (overrides format)** — one template per row (see placeholders below).
+- **Row template** — one template per row (overrides the format; see placeholders below).
 - **Heading / preamble** — a line emitted above the block (e.g. `## Tasks`).
+- **Sentinel key** — key for the block (defaults to the view name).
 
 **Item details**
 - **Item details** — `Hide` (default), `Inline` (same line), or `Sub-items` (nested bullets).
-- **Detail properties (empty = all columns)** — comma-separated ids/display names to show (e.g. `note.due, status`).
+- **Detail properties** — comma-separated ids/display names to show (empty = all columns).
 - **Details separator** — used by `Inline` (default ` · `; verbatim, include your own spaces).
-- **Label details** — `Due: 2026-10-13` instead of bare values (default off).
+- **Show property names** — `Due: 2026-10-13` instead of bare values (default off).
 - **Trailing property** — a property appended to each checklist/numbered item.
 
 **Behaviour**
-- **Group headings (from the Base groupBy)** — emit a group header per group using Bases' grouped results (default on).
+- **Group headings** — emit a group header per group using Bases' grouped results (default on).
 - **Group template** — header template with `{group}` and `{count}` (default `### {group}`).
 - **No-results text** — shown when there are no rows (default: nothing).
-- **Auto-serialize when embedded** — re-write when the data updates (debounced).
-- **Replace embed with static text (freeze)** — swap the live `![[base#view]]` for plain Markdown (no embed, no sentinels).
+- **Auto-serialize (embedded)** — re-write when the data updates (debounced).
+- **Freeze (replace embed with text)** — swap the live `![[base#view]]` for plain Markdown (no embed, no sentinels).
 
 #### Row template placeholders
 `{link}`, `{title}`, `{path}`, `{index}`, `{group}`, and any property by id (`{note.due}`) or display name (`{Due}`) — case-insensitive. Example:
