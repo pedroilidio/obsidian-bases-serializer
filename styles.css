@@ -156,6 +156,12 @@
   display: none;
 }
 
+/* When the hint is hidden, the toolbar's own padding is the gap — don't add the
+   preview's margin on top of it (that doubled the space in embeds). */
+.bases-serializer-hint:empty + .bases-serializer-preview-wrap {
+  margin-top: 0;
+}
+
 .bases-serializer-preview-wrap {
   flex: 0 1 auto;
   min-height: 0;
