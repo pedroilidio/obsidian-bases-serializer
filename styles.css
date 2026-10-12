@@ -17,10 +17,10 @@
 
 .bases-serializer-split > button,
 select.bases-serializer-format {
-  height: auto;
-  padding: var(--size-4-1) var(--size-4-2);
+  height: var(--input-height, 30px);
+  padding: 0 var(--size-4-2);
   font-size: var(--font-ui-small);
-  line-height: 1.2;
+  line-height: 1;
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
 }
@@ -34,6 +34,11 @@ select.bases-serializer-format {
   display: inline-flex;
   align-items: center;
   gap: var(--size-4-1);
+}
+
+.bases-serializer-icon {
+  display: inline-flex;
+  align-items: center;
 }
 
 .bases-serializer-split > button {

@@ -37,7 +37,9 @@ function countLabel(count: number): string {
 class SerializerView extends BasesView {
   type = VIEW_TYPE;
   private buttonEl: HTMLButtonElement;
+  private iconEl: HTMLElement;
   private labelEl: HTMLSpanElement;
+  private iconName = "";
   private previewEl: HTMLElement;
   private statusEl: HTMLElement;
   private hintEl: HTMLElement;
@@ -55,7 +57,7 @@ class SerializerView extends BasesView {
 
     const split = toolbar.createDiv({ cls: "bases-serializer-split" });
     this.buttonEl = split.createEl("button", { cls: "mod-cta bases-serializer-serialize" });
-    setIcon(this.buttonEl, "file-output");
+    this.iconEl = this.buttonEl.createSpan({ cls: "bases-serializer-icon" });
     this.labelEl = this.buttonEl.createSpan({ cls: "bases-serializer-label", text: "Serialize now" });
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
@@ -98,6 +100,7 @@ class SerializerView extends BasesView {
     }
 
     const { embedded } = this.embedInfo();
+    this.updateIcon();
     this.labelEl.setText(embedded ? "Serialize here" : "Serialize now");
     const file = this.targetFile(embedded);
     const where = file ? file.path : embedded ? "no active note" : "no target";
@@ -259,6 +262,14 @@ class SerializerView extends BasesView {
     return String(this.config.get("key") || this.config.name || DEFAULT_KEY);
   }
 
+  private updateIcon(): void {
+    const want = String(this.config.get("icon") || "file-output");
+    if (want === this.iconName) return;
+    this.iconName = want;
+    this.iconEl.empty();
+    setIcon(this.iconEl, want);
+  }
+
   private async removeBlock(): Promise<void> {
     const { embedded } = this.embedInfo();
     const file = this.targetFile(embedded);
@@ -334,6 +345,24 @@ export default class BasesSerializerPlugin extends Plugin {
           type: "group",
           displayName: "Output",
           items: [
+            {
+              type: "dropdown",
+              key: "icon",
+              displayName: "Button icon",
+              default: "file-output",
+              options: {
+                "file-output": "file-output (export)",
+                "file-down": "file-down",
+                "download": "download",
+                "save": "save",
+                "snowflake": "snowflake (freeze)",
+                "camera": "camera (snapshot)",
+                "bookmark": "bookmark",
+                "copy": "copy",
+                "list-checks": "list-checks",
+                "square-stack": "square-stack",
+              },
+            },
             {
               type: "dropdown",
               key: "format",
