@@ -15,6 +15,7 @@
 }
 
 .bases-serializer-split > button {
+  border: 1px solid var(--background-modifier-border);
   border-radius: 0;
   margin: 0;
 }
@@ -22,12 +23,12 @@
 .bases-serializer-split > button:first-child {
   border-top-left-radius: var(--radius-s);
   border-bottom-left-radius: var(--radius-s);
+  border-right: none;
 }
 
 .bases-serializer-split > button:last-child {
   border-top-right-radius: var(--radius-s);
   border-bottom-right-radius: var(--radius-s);
-  box-shadow: inset 1px 0 0 var(--background-modifier-border);
   padding-inline: var(--size-4-1);
 }
 
@@ -66,4 +67,17 @@
 
 .bases-serializer-preview {
   background: var(--background-secondary);
-  pa
+  padding: var(--size-4-2);
+  border-radius: var(--radius-s);
+  overflow: auto;
+  max-height: 50vh;
+  margin-top: var(--size-4-2);
+}
+
+.bases-serializer-preview > :first-child {
+  margin-top: 0;
+}
+
+.bases-serializer-preview > :last-child {
+  margin-bottom: 0;
+}
