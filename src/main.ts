@@ -251,7 +251,7 @@ class SerializerView extends BasesView {
   private showBelow(menu: Menu, el: HTMLElement | null): void {
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    menu.showAtPosition({ x: rect.left, y: rect.bottom, width: rect.width, overlap: false });
+    menu.showAtPosition({ x: rect.left, y: rect.bottom });
   }
 
   private openFormatMenu(): void {
@@ -260,7 +260,7 @@ class SerializerView extends BasesView {
     for (const [value, label] of FORMATS) {
       menu.addItem((item) => {
         item.setTitle(label);
-        if (value === current) item.setIcon("check");
+        item.setChecked(value === current);
         item.onClick(() => {
           this.config.set("format", value);
           this.render();
