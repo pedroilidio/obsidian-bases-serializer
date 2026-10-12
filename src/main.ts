@@ -68,8 +68,9 @@ class SerializerView extends BasesView {
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
-    this.menuBtnEl = split.createEl("button", { text: "▾", cls: "mod-cta bases-serializer-menu" });
+    this.menuBtnEl = split.createEl("button", { cls: "mod-cta bases-serializer-menu" });
     this.menuBtnEl.setAttribute("aria-label", "More serialize actions");
+    setIcon(this.menuBtnEl.createSpan({ cls: "bases-serializer-icon" }), "chevron-down");
     this.menuBtnEl.addEventListener("click", () => this.openMenu());
 
     this.formatBtn = toolbar.createEl("button", { cls: "bases-serializer-format" });

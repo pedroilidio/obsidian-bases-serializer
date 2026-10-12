@@ -286,8 +286,9 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
-    this.menuBtnEl = split.createEl("button", { text: "\u25BE", cls: "mod-cta bases-serializer-menu" });
+    this.menuBtnEl = split.createEl("button", { cls: "mod-cta bases-serializer-menu" });
     this.menuBtnEl.setAttribute("aria-label", "More serialize actions");
+    (0, import_obsidian.setIcon)(this.menuBtnEl.createSpan({ cls: "bases-serializer-icon" }), "chevron-down");
     this.menuBtnEl.addEventListener("click", () => this.openMenu());
     this.formatBtn = toolbar.createEl("button", { cls: "bases-serializer-format" });
     this.formatBtn.setAttribute("aria-label", "Format");
