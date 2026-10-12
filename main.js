@@ -94,6 +94,12 @@ function upsertBlock(text, key, body, meta = {}) {
   return `${trimmed}${separator}${block.join("\n")}
 `;
 }
+function stripBlock(text, key) {
+  const lines = text.split("\n");
+  const range = findBlock(lines, key);
+  if (!range) return text;
+  return [...lines.slice(0, range[0]), ...lines.slice(range[1] + 1)].join("\n");
+}
 function upsertBlockAfterAnchor(text, anchor, key, body, meta = {}) {
   const lines = text.split("\n");
   const block = [sentinelLine(key, meta), body.replace(/\n+$/, ""), SENTINEL_CLOSE];
@@ -112,20 +118,20 @@ function upsertBlockAfterAnchor(text, anchor, key, body, meta = {}) {
   return `${trimmed}${separator}${block.join("\n")}
 `;
 }
-function upsertBlockReplacingAnchor(text, anchor, key, body, meta = {}) {
+function solidifyAnchorToText(text, anchor, key, body) {
   const lines = text.split("\n");
-  const block = [sentinelLine(key, meta), body.replace(/\n+$/, ""), SENTINEL_CLOSE];
+  const bodyLines = body.replace(/\n+$/, "").split("\n");
   const range = findBlock(lines, key);
   const working = range !== null ? [...lines.slice(0, range[0]), ...lines.slice(range[1] + 1)] : lines.slice();
   if (anchor) {
     const at = working.findIndex((line) => line.includes(anchor));
     if (at >= 0) {
-      return [...working.slice(0, at), ...block, ...working.slice(at + 1)].join("\n");
+      return [...working.slice(0, at), ...bodyLines, ...working.slice(at + 1)].join("\n");
     }
   }
   const trimmed = working.join("\n").replace(/\n+$/, "");
   const separator = trimmed === "" ? "" : "\n\n";
-  return `${trimmed}${separator}${block.join("\n")}
+  return `${trimmed}${separator}${bodyLines.join("\n")}
 `;
 }
 
@@ -148,6 +154,9 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
+    const menuButton = toolbar.createEl("button", { text: "\u25BE", cls: "bases-serializer-menu" });
+    menuButton.setAttribute("aria-label", "More serialize actions");
+    menuButton.addEventListener("click", (event) => this.openMenu(event));
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview" });
   }
@@ -225,7 +234,35 @@ var SerializerView = class extends import_obsidian.BasesView {
     const file = this.app.vault.getAbstractFileByPath(path);
     return file instanceof import_obsidian.TFile ? file : null;
   }
-  async serialize(notify) {
+  openMenu(event) {
+    const menu = new import_obsidian.Menu();
+    menu.addItem(
+      (item) => item.setTitle("Serialize").setIcon("file-output").onClick(() => void this.serialize(true))
+    );
+    menu.addItem(
+      (item) => item.setTitle("Serialize & solidify (remove embed + sentinels)").setIcon("file-x").onClick(() => void this.serialize(true, true))
+    );
+    menu.addSeparator();
+    menu.addItem(
+      (item) => item.setTitle("Copy Markdown").setIcon("copy").onClick(() => void navigator.clipboard.writeText(this.body()))
+    );
+    menu.addItem(
+      (item) => item.setTitle("Remove serialized block").setIcon("trash").onClick(() => void this.removeBlock())
+    );
+    menu.showAtMouseEvent(event);
+  }
+  key() {
+    return String(this.config.get("key") || this.config.name || DEFAULT_KEY);
+  }
+  async removeBlock() {
+    const { embedded } = this.embedInfo();
+    const file = this.targetFile(embedded);
+    if (!file) return;
+    const key = this.key();
+    await this.app.vault.process(file, (data) => stripBlock(data, key));
+    new import_obsidian.Notice(`Bases Serializer: removed block "${key}" from ${file.path}`);
+  }
+  async serialize(notify, solidifyOverride) {
     const { embedded, anchor } = this.embedInfo();
     const file = this.targetFile(embedded);
     if (!file) {
@@ -236,13 +273,13 @@ var SerializerView = class extends import_obsidian.BasesView {
       }
       return;
     }
-    const key = String(this.config.get("key") || this.config.name || DEFAULT_KEY);
+    const key = this.key();
     const body = this.body();
     const meta = { format: String(this.config.get("format") || "list") };
-    const replaceEmbed = Boolean(this.config.get("replaceEmbed"));
+    const solidify = embedded && (solidifyOverride != null ? solidifyOverride : Boolean(this.config.get("solidify")));
     await this.app.vault.process(file, (data) => {
       if (!embedded) return upsertBlock(data, key, body, meta);
-      return replaceEmbed ? upsertBlockReplacingAnchor(data, anchor, key, body, meta) : upsertBlockAfterAnchor(data, anchor, key, body, meta);
+      return solidify ? solidifyAnchorToText(data, anchor, key, body) : upsertBlockAfterAnchor(data, anchor, key, body, meta);
     });
     if (notify) {
       new import_obsidian.Notice(`Bases Serializer: ${countLabel(this.data.data.length)} \u2192 ${file.path}`);
@@ -289,8 +326,8 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
         },
         {
           type: "toggle",
-          key: "replaceEmbed",
-          displayName: "Remove the embed after serializing",
+          key: "solidify",
+          displayName: "Fully solidify (remove embed and sentinels)",
           default: false
         }
       ]

@@ -10,6 +10,10 @@
   font-size: 0.85em;
 }
 
+.bases-serializer-menu {
+  padding: 0 6px;
+}
+
 .bases-serializer-preview {
   background: var(--background-secondary);
   padding: 8px;

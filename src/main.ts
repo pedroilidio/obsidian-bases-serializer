@@ -4,6 +4,7 @@ import {
   BasesPropertyId,
   BasesView,
   MarkdownRenderer,
+  Menu,
   Notice,
   Plugin,
   QueryController,
@@ -11,7 +12,7 @@ import {
 } from "obsidian";
 
 import { Format, SerializedRow, renderRows } from "./render";
-import { upsertBlock, upsertBlockAfterAnchor, upsertBlockReplacingAnchor } from "./sentinels";
+import { solidifyAnchorToText, stripBlock, upsertBlock, upsertBlockAfterAnchor } from "./sentinels";
 
 const VIEW_TYPE = "bases-serializer";
 const DEFAULT_KEY = "default";
@@ -39,6 +40,9 @@ class SerializerView extends BasesView {
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
+    const menuButton = toolbar.createEl("button", { text: "▾", cls: "bases-serializer-menu" });
+    menuButton.setAttribute("aria-label", "More serialize actions");
+    menuButton.addEventListener("click", (event) => this.openMenu(event));
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
 
     this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview" });
@@ -133,7 +137,44 @@ class SerializerView extends BasesView {
     return file instanceof TFile ? file : null;
   }
 
-  async serialize(notify: boolean): Promise<void> {
+  private openMenu(event: MouseEvent): void {
+    const menu = new Menu();
+    menu.addItem((item) =>
+      item.setTitle("Serialize").setIcon("file-output").onClick(() => void this.serialize(true))
+    );
+    menu.addItem((item) =>
+      item
+        .setTitle("Serialize & solidify (remove embed + sentinels)")
+        .setIcon("file-x")
+        .onClick(() => void this.serialize(true, true))
+    );
+    menu.addSeparator();
+    menu.addItem((item) =>
+      item
+        .setTitle("Copy Markdown")
+        .setIcon("copy")
+        .onClick(() => void navigator.clipboard.writeText(this.body()))
+    );
+    menu.addItem((item) =>
+      item.setTitle("Remove serialized block").setIcon("trash").onClick(() => void this.removeBlock())
+    );
+    menu.showAtMouseEvent(event);
+  }
+
+  private key(): string {
+    return String(this.config.get("key") || this.config.name || DEFAULT_KEY);
+  }
+
+  private async removeBlock(): Promise<void> {
+    const { embedded } = this.embedInfo();
+    const file = this.targetFile(embedded);
+    if (!file) return;
+    const key = this.key();
+    await this.app.vault.process(file, (data) => stripBlock(data, key));
+    new Notice(`Bases Serializer: removed block "${key}" from ${file.path}`);
+  }
+
+  async serialize(notify: boolean, solidifyOverride?: boolean): Promise<void> {
     const { embedded, anchor } = this.embedInfo();
     const file = this.targetFile(embedded);
     if (!file) {
@@ -147,15 +188,15 @@ class SerializerView extends BasesView {
       return;
     }
 
-    const key = String(this.config.get("key") || this.config.name || DEFAULT_KEY);
+    const key = this.key();
     const body = this.body();
     const meta = { format: String(this.config.get("format") || "list") };
-    const replaceEmbed = Boolean(this.config.get("replaceEmbed"));
+    const solidify = embedded && (solidifyOverride ?? Boolean(this.config.get("solidify")));
 
     await this.app.vault.process(file, (data) => {
       if (!embedded) return upsertBlock(data, key, body, meta);
-      return replaceEmbed
-        ? upsertBlockReplacingAnchor(data, anchor, key, body, meta)
+      return solidify
+        ? solidifyAnchorToText(data, anchor, key, body)
         : upsertBlockAfterAnchor(data, anchor, key, body, meta);
     });
 
@@ -205,8 +246,8 @@ export default class BasesSerializerPlugin extends Plugin {
         },
         {
           type: "toggle",
-          key: "replaceEmbed",
-          displayName: "Remove the embed after serializing",
+          key: "solidify",
+          displayName: "Fully solidify (remove embed and sentinels)",
           default: false,
         },
       ],

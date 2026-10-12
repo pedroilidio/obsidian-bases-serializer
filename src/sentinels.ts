@@ -93,18 +93,17 @@ export function upsertBlockAfterAnchor(
 }
 
 /**
- * Upsert a block in place of the embed line (fully solidify: the live
- * `![[base#view]]` is replaced by the frozen block).
+ * Fully solidify: remove any serialized block for `key`, and replace the embed
+ * line with the plain Markdown body (no sentinels, no embed).
  */
-export function upsertBlockReplacingAnchor(
+export function solidifyAnchorToText(
   text: string,
   anchor: string,
   key: string,
-  body: string,
-  meta: SentinelMeta = {}
+  body: string
 ): string {
   const lines = text.split("\n");
-  const block = [sentinelLine(key, meta), body.replace(/\n+$/, ""), SENTINEL_CLOSE];
+  const bodyLines = body.replace(/\n+$/, "").split("\n");
 
   const range = findBlock(lines, key);
   const working =
@@ -113,11 +112,11 @@ export function upsertBlockReplacingAnchor(
   if (anchor) {
     const at = working.findIndex((line) => line.includes(anchor));
     if (at >= 0) {
-      return [...working.slice(0, at), ...block, ...working.slice(at + 1)].join("\n");
+      return [...working.slice(0, at), ...bodyLines, ...working.slice(at + 1)].join("\n");
     }
   }
 
   const trimmed = working.join("\n").replace(/\n+$/, "");
   const separator = trimmed === "" ? "" : "\n\n";
-  return `${trimmed}${separator}${block.join("\n")}\n`;
+  return `${trimmed}${separator}${bodyLines.join("\n")}\n`;
 }

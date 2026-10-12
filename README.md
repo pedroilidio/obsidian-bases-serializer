@@ -31,7 +31,14 @@ If the base is open as its own tab, set a **Target note** in the view options an
 - **Format** — `List`, `Checklist`, or `Table`.
 - **Checklist suffix property** — optional property id appended to checklist items (e.g. `note.due`).
 - **Auto-serialize when embedded** — re-write when the data updates (debounced).
-- **Remove the embed after serializing** — replace the live `![[base#view]]` with the frozen block, so the note is fully static (default off).
+- **Fully solidify (remove embed and sentinels)** — replace the live `![[base#view]]` with plain Markdown (no embed, no sentinel comments), so the note is fully static (default off).
+
+### Button menu
+Next to **Serialize** there's a **▾** menu with quick one-off actions:
+- **Serialize** (uses the view options)
+- **Serialize & solidify** (remove the embed + sentinels this time)
+- **Copy Markdown**
+- **Remove serialized block**
 
 ## Output format
 

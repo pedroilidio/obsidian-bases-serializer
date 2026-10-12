@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   findBlock,
   sentinelLine,
+  solidifyAnchorToText,
   stripBlock,
   upsertBlock,
   upsertBlockAfterAnchor,
-  upsertBlockReplacingAnchor,
 } from "../src/sentinels";
 
 describe("sentinelLine", () => {
@@ -76,12 +76,21 @@ describe("upsertBlockAfterAnchor", () => {
   });
 });
 
-describe("upsertBlockReplacingAnchor", () => {
-  it("replaces the embed line with the block", () => {
+describe("solidifyAnchorToText", () => {
+  it("replaces the embed with plain text (no sentinels)", () => {
     const text = "# Note\n\n![[tasks.base#Today]]\n\ntail\n";
-    const out = upsertBlockReplacingAnchor(text, "tasks.base#Today", "Today", "- [[A]]");
+    const out = solidifyAnchorToText(text, "tasks.base#Today", "Today", "- [[A]]\n- [[B]]");
     expect(out).not.toContain("![[tasks.base#Today]]");
-    expect(out).toContain('%% bases-serializer key="Today" %%');
+    expect(out).not.toContain("bases-serializer");
+    expect(out).toContain("- [[A]]\n- [[B]]");
     expect(out).toContain("tail");
+  });
+
+  it("replaces an existing block with plain text", () => {
+    const withBlock = upsertBlock("![[b.base#V]]\n", "V", "- [[old]]");
+    const out = solidifyAnchorToText(withBlock, "b.base#V", "V", "- [[new]]");
+    expect(out).not.toContain("bases-serializer");
+    expect(out).toContain("- [[new]]");
+    expect(out).not.toContain("- [[old]]");
   });
 });
