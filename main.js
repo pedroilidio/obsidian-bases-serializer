@@ -299,7 +299,7 @@ var SerializerView = class extends import_obsidian.BasesView {
     });
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
-    this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview" });
+    this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview markdown-rendered" });
   }
   onDataUpdated() {
     this.render();

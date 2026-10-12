@@ -95,9 +95,6 @@ select.bases-serializer-format {
 }
 
 .bases-serializer-preview {
-  background: var(--background-secondary);
-  padding: var(--size-4-2);
-  border-radius: var(--radius-s);
   overflow: auto;
   max-height: 50vh;
   margin-top: var(--size-4-2);
