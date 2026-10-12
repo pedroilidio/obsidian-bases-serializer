@@ -12,6 +12,7 @@
 /* Split button: [Serialize now | ▾] — accent (mod-cta), sized like the dropdown */
 .bases-serializer-split {
   display: inline-flex;
+  gap: 0;
 }
 
 .bases-serializer-split > button,
@@ -31,12 +32,14 @@ select.bases-serializer-format {
 .bases-serializer-split > button:first-child {
   border-top-left-radius: var(--radius-s);
   border-bottom-left-radius: var(--radius-s);
+  border-right: none;
 }
 
 .bases-serializer-split > button:last-child {
   border-top-right-radius: var(--radius-s);
   border-bottom-right-radius: var(--radius-s);
-  border-left: 1px solid var(--interactive-accent-hover);
+  border-left: none;
+  box-shadow: inset 1px 0 0 var(--interactive-accent-hover);
   padding-inline: var(--size-4-1);
 }
 
