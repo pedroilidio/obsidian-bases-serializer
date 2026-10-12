@@ -50,10 +50,15 @@ class SerializerView extends BasesView {
     containerEl.addClass("bases-serializer");
 
     const toolbar = containerEl.createDiv({ cls: "bases-serializer-toolbar" });
-    this.buttonEl = toolbar.createEl("button", { text: "Serialize now" });
+
+    const split = toolbar.createDiv({ cls: "bases-serializer-split" });
+    this.buttonEl = split.createEl("button", { text: "Serialize now", cls: "bases-serializer-serialize" });
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
+    const menuButton = split.createEl("button", { text: "▾", cls: "bases-serializer-menu" });
+    menuButton.setAttribute("aria-label", "More serialize actions");
+    menuButton.addEventListener("click", (event) => this.openMenu(event));
 
     this.formatEl = toolbar.createEl("select", { cls: "dropdown bases-serializer-format" });
     for (const [value, label] of FORMATS) {
@@ -63,10 +68,6 @@ class SerializerView extends BasesView {
       this.config.set("format", this.formatEl.value);
       this.render();
     });
-
-    const menuButton = toolbar.createEl("button", { text: "▾", cls: "bases-serializer-menu" });
-    menuButton.setAttribute("aria-label", "More serialize actions");
-    menuButton.addEventListener("click", (event) => this.openMenu(event));
 
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
