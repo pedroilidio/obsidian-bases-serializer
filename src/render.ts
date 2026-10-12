@@ -1,4 +1,5 @@
 export type Format = "list" | "checklist" | "numbered" | "table";
+export type PropertiesMode = "none" | "inline" | "subitems";
 
 export interface SerializedRow {
   /** Markdown link text for the file, e.g. "[[Notes/Foo]]". */
@@ -25,6 +26,17 @@ export interface RowContext {
   index: number;
   group: string;
   values: Record<string, string>;
+}
+
+export interface RenderOptions {
+  format?: Format;
+  suffixIndex?: number;
+  headers?: string[];
+  template?: string;
+  group?: string;
+  properties?: PropertiesMode;
+  propertySeparator?: string;
+  propertyLabels?: boolean;
 }
 
 function escapeCell(value: string): string {
@@ -66,16 +78,40 @@ function rowContext(row: SerializedRow, index: number, group?: string): RowConte
   };
 }
 
-export function renderRow(
-  row: SerializedRow,
-  format: Format,
-  suffixIndex?: number,
-  index = 0
-): string {
-  const suffix = suffixFor(row, suffixIndex);
-  if (format === "checklist") return `- [ ] ${row.link}${suffix}`;
-  if (format === "numbered") return `${index + 1}. ${row.link}${suffix}`;
-  return `- ${row.link}${suffix}`;
+function propertyParts(row: SerializedRow, options: RenderOptions): string[] {
+  const mode = options.properties ?? "none";
+  if (mode === "none") return [];
+  const headers = options.headers ?? [];
+  const parts: string[] = [];
+  row.cells.forEach((value, index) => {
+    if (!value) return;
+    const label = options.propertyLabels ? headers[index + 1] : "";
+    parts.push(label ? `${label}: ${value}` : value);
+  });
+  return parts;
+}
+
+export function renderRow(row: SerializedRow, index: number, options: RenderOptions = {}): string {
+  const format = options.format ?? "list";
+  const suffix = suffixFor(row, options.suffixIndex);
+
+  let line: string;
+  if (format === "checklist") line = `- [ ] ${row.link}${suffix}`;
+  else if (format === "numbered") line = `${index + 1}. ${row.link}${suffix}`;
+  else line = `- ${row.link}${suffix}`;
+
+  const parts = propertyParts(row, options);
+  if (parts.length > 0) {
+    const mode = options.properties ?? "none";
+    if (mode === "inline") {
+      const separator = options.propertySeparator ?? " · ";
+      return `${line}${separator}${parts.join(separator)}`;
+    }
+    if (mode === "subitems") {
+      return [line, ...parts.map((part) => `\t- ${part}`)].join("\n");
+    }
+  }
+  return line;
 }
 
 export function renderTable(rows: SerializedRow[], headers: string[] = []): string {
@@ -91,32 +127,23 @@ export function renderTable(rows: SerializedRow[], headers: string[] = []): stri
   return [header, divider, ...body].join("\n");
 }
 
-export function renderRows(
-  rows: SerializedRow[],
-  format: Format = "list",
-  suffixIndex?: number,
-  headers: string[] = [],
-  template?: string,
-  group?: string
-): string {
+export function renderRows(rows: SerializedRow[], options: RenderOptions = {}): string {
   if (rows.length === 0) return "";
-  if (template) {
-    return rows.map((row, index) => renderTemplate(template, rowContext(row, index, group))).join("\n");
+  const format = options.format ?? "list";
+
+  if (options.template) {
+    return rows
+      .map((row, index) => renderTemplate(options.template as string, rowContext(row, index, options.group)))
+      .join("\n");
   }
-  if (format === "table") return renderTable(rows, headers);
-  return rows.map((row, index) => renderRow(row, format, suffixIndex, index)).join("\n");
+  if (format === "table") return renderTable(rows, options.headers ?? []);
+  return rows.map((row, index) => renderRow(row, index, options)).join("\n");
 }
 
-export function renderGroups(
-  groups: SerializedGroup[],
-  format: Format = "list",
-  suffixIndex?: number,
-  headers: string[] = [],
-  template?: string
-): string {
+export function renderGroups(groups: SerializedGroup[], options: RenderOptions = {}): string {
   const parts: string[] = [];
   for (const group of groups) {
-    const body = renderRows(group.rows, format, suffixIndex, headers, template, group.title ?? undefined);
+    const body = renderRows(group.rows, { ...options, group: group.title ?? undefined });
     if (!body) continue;
     parts.push(group.title ? `### ${group.title}\n\n${body}` : body);
   }

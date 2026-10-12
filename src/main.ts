@@ -11,7 +11,7 @@ import {
   TFile,
 } from "obsidian";
 
-import { Format, SerializedRow, renderGroups, renderRows } from "./render";
+import { Format, PropertiesMode, RenderOptions, SerializedRow, renderGroups, renderRows } from "./render";
 import { solidifyAnchorToText, stripBlock, upsertBlock, upsertBlockAfterAnchor } from "./sentinels";
 const VIEW_TYPE = "bases-serializer";
 const DEFAULT_KEY = "default";
@@ -143,6 +143,16 @@ class SerializerView extends BasesView {
     }
 
     const headers = this.headers();
+    const options: RenderOptions = {
+      format,
+      suffixIndex,
+      headers,
+      template,
+      properties: (String(this.config.get("props") || "none") as PropertiesMode),
+      propertySeparator: String(this.config.get("propSep") || " · "),
+      propertyLabels: Boolean(this.config.get("propLabels")),
+    };
+
     let rendered: string;
 
     if (Boolean(this.config.get("group")) && this.data.groupedData.some((group) => group.hasKey())) {
@@ -150,9 +160,9 @@ class SerializerView extends BasesView {
         title: group.hasKey() && group.key ? group.key.toString() : null,
         rows: group.entries.map((entry) => this.row(entry)),
       }));
-      rendered = renderGroups(groups, format, suffixIndex, headers, template);
+      rendered = renderGroups(groups, options);
     } else {
-      rendered = renderRows(this.rows(), format, suffixIndex, headers, template);
+      rendered = renderRows(this.rows(), options);
     }
 
     return rendered.trim() ? rendered : String(this.config.get("empty") || "");
@@ -288,6 +298,25 @@ export default class BasesSerializerPlugin extends Plugin {
           key: "suffix",
           displayName: "Suffix property (checklist / numbered)",
           placeholder: "note.due",
+        },
+        {
+          type: "dropdown",
+          key: "props",
+          displayName: "Properties (list / checklist / numbered)",
+          default: "none",
+          options: { none: "Hide", inline: "Inline", subitems: "Sub-items" },
+        },
+        {
+          type: "text",
+          key: "propSep",
+          displayName: "Property separator",
+          placeholder: " · ",
+        },
+        {
+          type: "toggle",
+          key: "propLabels",
+          displayName: "Show property names",
+          default: false,
         },
         {
           type: "text",

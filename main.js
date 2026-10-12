@@ -62,11 +62,39 @@ function rowContext(row, index, group) {
     values: (_c = row.values) != null ? _c : {}
   };
 }
-function renderRow(row, format, suffixIndex, index = 0) {
-  const suffix = suffixFor(row, suffixIndex);
-  if (format === "checklist") return `- [ ] ${row.link}${suffix}`;
-  if (format === "numbered") return `${index + 1}. ${row.link}${suffix}`;
-  return `- ${row.link}${suffix}`;
+function propertyParts(row, options) {
+  var _a, _b;
+  const mode = (_a = options.properties) != null ? _a : "none";
+  if (mode === "none") return [];
+  const headers = (_b = options.headers) != null ? _b : [];
+  const parts = [];
+  row.cells.forEach((value, index) => {
+    if (!value) return;
+    const label = options.propertyLabels ? headers[index + 1] : "";
+    parts.push(label ? `${label}: ${value}` : value);
+  });
+  return parts;
+}
+function renderRow(row, index, options = {}) {
+  var _a, _b, _c;
+  const format = (_a = options.format) != null ? _a : "list";
+  const suffix = suffixFor(row, options.suffixIndex);
+  let line;
+  if (format === "checklist") line = `- [ ] ${row.link}${suffix}`;
+  else if (format === "numbered") line = `${index + 1}. ${row.link}${suffix}`;
+  else line = `- ${row.link}${suffix}`;
+  const parts = propertyParts(row, options);
+  if (parts.length > 0) {
+    const mode = (_b = options.properties) != null ? _b : "none";
+    if (mode === "inline") {
+      const separator = (_c = options.propertySeparator) != null ? _c : " \xB7 ";
+      return `${line}${separator}${parts.join(separator)}`;
+    }
+    if (mode === "subitems") {
+      return [line, ...parts.map((part) => `	- ${part}`)].join("\n");
+    }
+  }
+  return line;
 }
 function renderTable(rows, headers = []) {
   var _a, _b;
@@ -78,19 +106,21 @@ function renderTable(rows, headers = []) {
   );
   return [header, divider, ...body].join("\n");
 }
-function renderRows(rows, format = "list", suffixIndex, headers = [], template, group) {
+function renderRows(rows, options = {}) {
+  var _a, _b;
   if (rows.length === 0) return "";
-  if (template) {
-    return rows.map((row, index) => renderTemplate(template, rowContext(row, index, group))).join("\n");
+  const format = (_a = options.format) != null ? _a : "list";
+  if (options.template) {
+    return rows.map((row, index) => renderTemplate(options.template, rowContext(row, index, options.group))).join("\n");
   }
-  if (format === "table") return renderTable(rows, headers);
-  return rows.map((row, index) => renderRow(row, format, suffixIndex, index)).join("\n");
+  if (format === "table") return renderTable(rows, (_b = options.headers) != null ? _b : []);
+  return rows.map((row, index) => renderRow(row, index, options)).join("\n");
 }
-function renderGroups(groups, format = "list", suffixIndex, headers = [], template) {
+function renderGroups(groups, options = {}) {
   var _a;
   const parts = [];
   for (const group of groups) {
-    const body = renderRows(group.rows, format, suffixIndex, headers, template, (_a = group.title) != null ? _a : void 0);
+    const body = renderRows(group.rows, { ...options, group: (_a = group.title) != null ? _a : void 0 });
     if (!body) continue;
     parts.push(group.title ? `### ${group.title}
 
@@ -284,15 +314,24 @@ var SerializerView = class extends import_obsidian.BasesView {
       if (index >= 0) suffixIndex = index;
     }
     const headers = this.headers();
+    const options = {
+      format,
+      suffixIndex,
+      headers,
+      template,
+      properties: String(this.config.get("props") || "none"),
+      propertySeparator: String(this.config.get("propSep") || " \xB7 "),
+      propertyLabels: Boolean(this.config.get("propLabels"))
+    };
     let rendered;
     if (Boolean(this.config.get("group")) && this.data.groupedData.some((group) => group.hasKey())) {
       const groups = this.data.groupedData.map((group) => ({
         title: group.hasKey() && group.key ? group.key.toString() : null,
         rows: group.entries.map((entry) => this.row(entry))
       }));
-      rendered = renderGroups(groups, format, suffixIndex, headers, template);
+      rendered = renderGroups(groups, options);
     } else {
-      rendered = renderRows(this.rows(), format, suffixIndex, headers, template);
+      rendered = renderRows(this.rows(), options);
     }
     return rendered.trim() ? rendered : String(this.config.get("empty") || "");
   }
@@ -403,6 +442,25 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
           key: "suffix",
           displayName: "Suffix property (checklist / numbered)",
           placeholder: "note.due"
+        },
+        {
+          type: "dropdown",
+          key: "props",
+          displayName: "Properties (list / checklist / numbered)",
+          default: "none",
+          options: { none: "Hide", inline: "Inline", subitems: "Sub-items" }
+        },
+        {
+          type: "text",
+          key: "propSep",
+          displayName: "Property separator",
+          placeholder: " \xB7 "
+        },
+        {
+          type: "toggle",
+          key: "propLabels",
+          displayName: "Show property names",
+          default: false
         },
         {
           type: "text",
