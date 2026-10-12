@@ -133,11 +133,18 @@ var SerializerView = class extends import_obsidian.BasesView {
       void this.serialize(true);
     });
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
-    this.previewEl = containerEl.createEl("pre", { cls: "bases-serializer-preview" });
+    this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview" });
   }
   onDataUpdated() {
+    var _a, _b;
     const body = this.body();
-    this.previewEl.setText(body || "(no rows)");
+    this.previewEl.empty();
+    if (body) {
+      const sourcePath = (_b = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.path) != null ? _b : "";
+      void import_obsidian.MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this);
+    } else {
+      this.previewEl.setText("(no rows)");
+    }
     const { embedded } = this.embedInfo();
     this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
     this.statusEl.setText(

@@ -11,12 +11,17 @@
 }
 
 .bases-serializer-preview {
-  white-space: pre-wrap;
-  word-break: break-word;
   background: var(--background-secondary);
   padding: 8px;
   border-radius: var(--radius-s);
   overflow: auto;
   max-height: 50vh;
-  margin: 0;
+}
+
+.bases-serializer-preview > :first-child {
+  margin-top: 0;
+}
+
+.bases-serializer-preview > :last-child {
+  margin-bottom: 0;
 }

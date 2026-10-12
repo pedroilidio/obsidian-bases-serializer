@@ -3,6 +3,7 @@ import {
   BasesEntry,
   BasesPropertyId,
   BasesView,
+  MarkdownRenderer,
   Notice,
   Plugin,
   QueryController,
@@ -40,12 +41,18 @@ class SerializerView extends BasesView {
     });
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
 
-    this.previewEl = containerEl.createEl("pre", { cls: "bases-serializer-preview" });
+    this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview" });
   }
 
   onDataUpdated(): void {
     const body = this.body();
-    this.previewEl.setText(body || "(no rows)");
+    this.previewEl.empty();
+    if (body) {
+      const sourcePath = this.app.workspace.getActiveFile()?.path ?? "";
+      void MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this);
+    } else {
+      this.previewEl.setText("(no rows)");
+    }
 
     const { embedded } = this.embedInfo();
     this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
