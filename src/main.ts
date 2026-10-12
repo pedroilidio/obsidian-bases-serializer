@@ -23,6 +23,8 @@ import {
 
 const VIEW_TYPE = "bases-serializer";
 const DEFAULT_KEY = "default";
+/** Extra gap (px) between a control and its menu; `Menu` adds 2px on top. */
+const MENU_GAP = 2;
 const FORMATS: Array<[Format, string]> = [
   ["list", "List"],
   ["checklist", "Checklist"],
@@ -248,10 +250,18 @@ class SerializerView extends BasesView {
     return file instanceof TFile ? file : null;
   }
 
+  /** Anchor a menu below its control, using Obsidian's own pattern (`width` +
+   *  `overlap`) so it aligns to the control's edge and auto-flips when it would
+   *  overflow. `Menu` adds a 2px top offset itself, giving a native-looking gap. */
   private showBelow(menu: Menu, el: HTMLElement | null): void {
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    menu.showAtPosition({ x: rect.left, y: rect.bottom });
+    menu.showAtPosition({
+      x: rect.x,
+      y: rect.bottom + MENU_GAP,
+      width: rect.width,
+      overlap: true,
+    });
   }
 
   private openFormatMenu(): void {

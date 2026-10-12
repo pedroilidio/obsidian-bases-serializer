@@ -258,6 +258,7 @@ function upsertBlockUnderHeading(text, heading, key, body, meta = {}) {
 // src/main.ts
 var VIEW_TYPE = "bases-serializer";
 var DEFAULT_KEY = "default";
+var MENU_GAP = 2;
 var FORMATS = [
   ["list", "List"],
   ["checklist", "Checklist"],
@@ -443,10 +444,18 @@ ${content}` : content;
     const file = this.app.vault.getAbstractFileByPath(path);
     return file instanceof import_obsidian.TFile ? file : null;
   }
+  /** Anchor a menu below its control, using Obsidian's own pattern (`width` +
+   *  `overlap`) so it aligns to the control's edge and auto-flips when it would
+   *  overflow. `Menu` adds a 2px top offset itself, giving a native-looking gap. */
   showBelow(menu, el) {
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    menu.showAtPosition({ x: rect.left, y: rect.bottom });
+    menu.showAtPosition({
+      x: rect.x,
+      y: rect.bottom + MENU_GAP,
+      width: rect.width,
+      overlap: true
+    });
   }
   openFormatMenu() {
     const current = this.format();
