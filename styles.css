@@ -9,7 +9,7 @@
   padding: var(--size-4-2) 0;
 }
 
-/* Split button: [Serialize now | ▾] — sized to match the format dropdown */
+/* Split button: [Serialize now | ▾] — accent (mod-cta), sized like the dropdown */
 .bases-serializer-split {
   display: inline-flex;
 }
@@ -20,11 +20,7 @@ select.bases-serializer-format {
   padding: var(--size-4-1) var(--size-4-2);
   font-size: var(--font-ui-small);
   line-height: 1.2;
-  border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
-  background-color: var(--background-modifier-form-field);
-  color: var(--text-normal);
-  box-shadow: none;
 }
 
 .bases-serializer-split > button {
@@ -35,24 +31,19 @@ select.bases-serializer-format {
 .bases-serializer-split > button:first-child {
   border-top-left-radius: var(--radius-s);
   border-bottom-left-radius: var(--radius-s);
-  border-right: none;
 }
 
 .bases-serializer-split > button:last-child {
   border-top-right-radius: var(--radius-s);
   border-bottom-right-radius: var(--radius-s);
+  border-left: 1px solid var(--interactive-accent-hover);
   padding-inline: var(--size-4-1);
-}
-
-/* Accent on hover (subtle by default, like the Bases toolbar) */
-.bases-serializer-serialize:hover,
-.bases-serializer-menu:hover {
-  background-color: var(--interactive-accent);
-  color: var(--text-on-accent);
 }
 
 select.bases-serializer-format {
   max-width: 9em;
+  background-color: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
 }
 
 .bases-serializer-status {

@@ -52,11 +52,11 @@ class SerializerView extends BasesView {
     const toolbar = containerEl.createDiv({ cls: "bases-serializer-toolbar" });
 
     const split = toolbar.createDiv({ cls: "bases-serializer-split" });
-    this.buttonEl = split.createEl("button", { text: "Serialize now", cls: "bases-serializer-serialize" });
+    this.buttonEl = split.createEl("button", { text: "Serialize now", cls: "mod-cta bases-serializer-serialize" });
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
-    const menuButton = split.createEl("button", { text: "▾", cls: "bases-serializer-menu" });
+    const menuButton = split.createEl("button", { text: "▾", cls: "mod-cta bases-serializer-menu" });
     menuButton.setAttribute("aria-label", "More serialize actions");
     menuButton.addEventListener("click", (event) => this.openMenu(event));
 

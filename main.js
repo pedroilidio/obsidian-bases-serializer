@@ -277,11 +277,11 @@ var SerializerView = class extends import_obsidian.BasesView {
     containerEl.addClass("bases-serializer");
     const toolbar = containerEl.createDiv({ cls: "bases-serializer-toolbar" });
     const split = toolbar.createDiv({ cls: "bases-serializer-split" });
-    this.buttonEl = split.createEl("button", { text: "Serialize now", cls: "bases-serializer-serialize" });
+    this.buttonEl = split.createEl("button", { text: "Serialize now", cls: "mod-cta bases-serializer-serialize" });
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
-    const menuButton = split.createEl("button", { text: "\u25BE", cls: "bases-serializer-menu" });
+    const menuButton = split.createEl("button", { text: "\u25BE", cls: "mod-cta bases-serializer-menu" });
     menuButton.setAttribute("aria-label", "More serialize actions");
     menuButton.addEventListener("click", (event) => this.openMenu(event));
     this.formatEl = toolbar.createEl("select", { cls: "dropdown bases-serializer-format" });
