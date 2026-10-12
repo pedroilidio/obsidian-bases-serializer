@@ -74,6 +74,8 @@ of truth: change the base, re-serialize, the note updates.
   icons (matching the native Bases toolbar), and the status text ellipsizes.
 - **Copy Markdown** confirms with a toast.
 
+![The Format picker: Default (Numbered) plus List, Checklist, Numbered, Table](./assets/format-menu.png)
+
 ## View options
 
 ### Standalone
