@@ -251,7 +251,7 @@ class SerializerView extends BasesView {
   private showBelow(menu: Menu, el: HTMLElement | null): void {
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    menu.showAtPosition({ x: rect.left, y: rect.bottom });
+    menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 });
   }
 
   private openFormatMenu(): void {
