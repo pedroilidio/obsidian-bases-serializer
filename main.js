@@ -365,8 +365,17 @@ var SerializerView = class extends import_obsidian.BasesView {
     const src = (_b = withSrc.getAttribute("src")) != null ? _b : "";
     return { embedded: true, anchor: (_c = src.split("/").pop()) != null ? _c : src };
   }
-  format() {
+  /** The format configured in the view options (the native "Format" dropdown). */
+  baseFormat() {
     return this.config.get("format") || "list";
+  }
+  /** The in-view picker override; empty means "follow the view options". */
+  formatOverride() {
+    return String(this.config.get("formatOverride") || "");
+  }
+  /** The effective format: the in-view override, else the view's configured one. */
+  format() {
+    return this.formatOverride() || this.baseFormat();
   }
   link(entry) {
     const style = String(this.config.get("linkStyle") || "wikilink");
@@ -465,20 +474,30 @@ ${content}` : content;
     });
   }
   openFormatMenu() {
-    const current = this.format();
+    const override = this.formatOverride();
+    const base = this.baseFormat();
     const menu = new import_obsidian.Menu();
+    menu.addItem(
+      (item) => {
+        var _a;
+        return item.setTitle(`Default (${(_a = FORMAT_LABELS[base]) != null ? _a : base})`).setIcon("settings-2").setChecked(!override).onClick(() => this.setFormatOverride(""));
+      }
+    );
+    menu.addSeparator();
     for (const [value, label] of FORMATS) {
       menu.addItem((item) => {
         item.setTitle(label);
         item.setIcon(FORMAT_ICONS[value]);
-        item.setChecked(value === current);
-        item.onClick(() => {
-          this.config.set("format", value);
-          this.render();
-        });
+        item.setChecked(override === value);
+        item.onClick(() => this.setFormatOverride(value));
       });
     }
     this.showBelow(menu, this.formatBtn);
+  }
+  /** Set (or clear, with "") the in-view format override and re-render. */
+  setFormatOverride(value) {
+    this.config.set("formatOverride", value);
+    this.render();
   }
   openMenu() {
     const menu = new import_obsidian.Menu();
@@ -540,7 +559,7 @@ ${content}` : content;
     }
     const key = this.key();
     const body = this.body();
-    const meta = { format: String(this.config.get("format") || "list") };
+    const meta = { format: this.format() };
     const solidify = embedded && (solidifyOverride != null ? solidifyOverride : Boolean(this.config.get("solidify")));
     await this.app.vault.process(file, (data) => {
       if (!embedded) {
@@ -586,7 +605,7 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
             {
               type: "dropdown",
               key: "format",
-              displayName: "Format",
+              displayName: "Default format",
               default: "list",
               options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" }
             },

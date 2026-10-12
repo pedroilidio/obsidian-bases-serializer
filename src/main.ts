@@ -157,8 +157,19 @@ class SerializerView extends BasesView {
     return { embedded: true, anchor: src.split("/").pop() ?? src };
   }
 
-  private format(): Format {
+  /** The format configured in the view options (the native "Format" dropdown). */
+  private baseFormat(): Format {
     return ((this.config.get("format") as Format) || "list");
+  }
+
+  /** The in-view picker override; empty means "follow the view options". */
+  private formatOverride(): string {
+    return String(this.config.get("formatOverride") || "");
+  }
+
+  /** The effective format: the in-view override, else the view's configured one. */
+  private format(): Format {
+    return ((this.formatOverride() as Format) || this.baseFormat());
   }
 
   private link(entry: BasesEntry): string {
@@ -272,20 +283,32 @@ class SerializerView extends BasesView {
   }
 
   private openFormatMenu(): void {
-    const current = this.format();
+    const override = this.formatOverride();
+    const base = this.baseFormat();
     const menu = new Menu();
+    menu.addItem((item) =>
+      item
+        .setTitle(`Default (${FORMAT_LABELS[base] ?? base})`)
+        .setIcon("settings-2")
+        .setChecked(!override)
+        .onClick(() => this.setFormatOverride(""))
+    );
+    menu.addSeparator();
     for (const [value, label] of FORMATS) {
       menu.addItem((item) => {
         item.setTitle(label);
         item.setIcon(FORMAT_ICONS[value]);
-        item.setChecked(value === current);
-        item.onClick(() => {
-          this.config.set("format", value);
-          this.render();
-        });
+        item.setChecked(override === value);
+        item.onClick(() => this.setFormatOverride(value));
       });
     }
     this.showBelow(menu, this.formatBtn);
+  }
+
+  /** Set (or clear, with "") the in-view format override and re-render. */
+  private setFormatOverride(value: string): void {
+    this.config.set("formatOverride", value);
+    this.render();
   }
 
   private openMenu(): void {
@@ -358,7 +381,7 @@ class SerializerView extends BasesView {
 
     const key = this.key();
     const body = this.body();
-    const meta = { format: String(this.config.get("format") || "list") };
+    const meta = { format: this.format() };
     const solidify = embedded && (solidifyOverride ?? Boolean(this.config.get("solidify")));
 
     await this.app.vault.process(file, (data) => {
@@ -411,7 +434,7 @@ export default class BasesSerializerPlugin extends Plugin {
             {
               type: "dropdown",
               key: "format",
-              displayName: "Format",
+              displayName: "Default format",
               default: "list",
               options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" },
             },
