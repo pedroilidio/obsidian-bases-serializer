@@ -292,6 +292,7 @@ var SerializerView = class extends import_obsidian.BasesView {
     menuButton.setAttribute("aria-label", "More serialize actions");
     menuButton.addEventListener("click", (event) => this.openMenu(event));
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
+    this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
     this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview" });
   }
   onDataUpdated() {
@@ -314,6 +315,13 @@ var SerializerView = class extends import_obsidian.BasesView {
     const file = this.targetFile(embedded);
     const where = file ? file.path : embedded ? "no active note" : "no target";
     this.statusEl.setText(`${countLabel(this.data.data.length)} \xB7 ${where}`);
+    if (!embedded && !file) {
+      this.hintEl.setText(
+        "Not embedded. Set a Target note in the Standalone options, or embed this Base in a note, to serialize."
+      );
+    } else {
+      this.hintEl.empty();
+    }
     if (Boolean(this.config.get("auto")) && embedded) {
       if (this.timer !== null) window.clearTimeout(this.timer);
       this.timer = window.setTimeout(() => {

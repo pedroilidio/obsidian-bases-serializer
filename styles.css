@@ -10,6 +10,16 @@
   font-size: 0.85em;
 }
 
+.bases-serializer-hint {
+  opacity: 0.7;
+  font-size: 0.85em;
+  padding: 2px 0;
+}
+
+.bases-serializer-hint:empty {
+  display: none;
+}
+
 .bases-serializer-menu {
   padding: 0 6px;
 }

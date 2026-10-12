@@ -38,6 +38,7 @@ class SerializerView extends BasesView {
   private buttonEl: HTMLButtonElement;
   private previewEl: HTMLElement;
   private statusEl: HTMLElement;
+  private hintEl: HTMLElement;
   private formatEl: HTMLSelectElement;
   private containerEl: HTMLElement;
   private timer: number | null = null;
@@ -68,6 +69,7 @@ class SerializerView extends BasesView {
     menuButton.addEventListener("click", (event) => this.openMenu(event));
 
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
+    this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
     this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview" });
   }
 
@@ -93,6 +95,14 @@ class SerializerView extends BasesView {
     const file = this.targetFile(embedded);
     const where = file ? file.path : embedded ? "no active note" : "no target";
     this.statusEl.setText(`${countLabel(this.data.data.length)} · ${where}`);
+
+    if (!embedded && !file) {
+      this.hintEl.setText(
+        "Not embedded. Set a Target note in the Standalone options, or embed this Base in a note, to serialize."
+      );
+    } else {
+      this.hintEl.empty();
+    }
 
     if (Boolean(this.config.get("auto")) && embedded) {
       if (this.timer !== null) window.clearTimeout(this.timer);
