@@ -21,6 +21,7 @@ select.bases-serializer-format {
   padding: var(--size-4-1) var(--size-4-2);
   font-size: var(--font-ui-small);
   line-height: 1.2;
+  border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
 }
 
