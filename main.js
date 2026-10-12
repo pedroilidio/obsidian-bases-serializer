@@ -285,15 +285,15 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
-    const menuButton = split.createEl("button", { text: "\u25BE", cls: "mod-cta bases-serializer-menu" });
-    menuButton.setAttribute("aria-label", "More serialize actions");
-    menuButton.addEventListener("click", (event) => this.openMenu(event));
+    this.menuBtnEl = split.createEl("button", { text: "\u25BE", cls: "mod-cta bases-serializer-menu" });
+    this.menuBtnEl.setAttribute("aria-label", "More serialize actions");
+    this.menuBtnEl.addEventListener("click", () => this.openMenu());
     this.formatBtn = toolbar.createEl("button", { cls: "bases-serializer-format" });
     this.formatBtn.setAttribute("aria-label", "Format");
     this.formatBtn.setAttribute("title", "Format");
     this.formatLabelEl = this.formatBtn.createSpan({ cls: "bases-serializer-format-label" });
     (0, import_obsidian.setIcon)(this.formatBtn.createSpan({ cls: "bases-serializer-format-caret" }), "chevron-down");
-    this.formatBtn.addEventListener("click", (event) => this.openFormatMenu(event));
+    this.formatBtn.addEventListener("click", () => this.openFormatMenu());
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
     this.previewWrapEl = containerEl.createDiv({ cls: "bases-serializer-preview-wrap" });
@@ -443,7 +443,12 @@ ${content}` : content;
     const file = this.app.vault.getAbstractFileByPath(path);
     return file instanceof import_obsidian.TFile ? file : null;
   }
-  openFormatMenu(event) {
+  showBelow(menu, el) {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    menu.showAtPosition({ x: rect.left, y: rect.bottom, width: rect.width, overlap: false });
+  }
+  openFormatMenu() {
     const current = this.format();
     const menu = new import_obsidian.Menu();
     for (const [value, label] of FORMATS) {
@@ -456,9 +461,9 @@ ${content}` : content;
         });
       });
     }
-    menu.showAtMouseEvent(event);
+    this.showBelow(menu, this.formatBtn);
   }
-  openMenu(event) {
+  openMenu() {
     const menu = new import_obsidian.Menu();
     menu.addItem(
       (item) => item.setTitle("Keep live view").setIcon("file-output").onClick(() => void this.serialize(true, false))
@@ -479,7 +484,7 @@ ${content}` : content;
     menu.addItem(
       (item) => item.setTitle("Remove serialized block").setIcon("trash").onClick(() => void this.removeBlock())
     );
-    menu.showAtMouseEvent(event);
+    this.showBelow(menu, this.menuBtnEl);
   }
   key() {
     return String(this.config.get("key") || this.config.name || DEFAULT_KEY);

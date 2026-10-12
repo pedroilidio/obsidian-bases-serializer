@@ -46,6 +46,7 @@ class SerializerView extends BasesView {
   private hintEl: HTMLElement;
   private formatBtn: HTMLButtonElement;
   private formatLabelEl: HTMLSpanElement;
+  private menuBtnEl: HTMLButtonElement;
   private containerEl: HTMLElement;
   private timer: number | null = null;
 
@@ -65,16 +66,16 @@ class SerializerView extends BasesView {
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
-    const menuButton = split.createEl("button", { text: "▾", cls: "mod-cta bases-serializer-menu" });
-    menuButton.setAttribute("aria-label", "More serialize actions");
-    menuButton.addEventListener("click", (event) => this.openMenu(event));
+    this.menuBtnEl = split.createEl("button", { text: "▾", cls: "mod-cta bases-serializer-menu" });
+    this.menuBtnEl.setAttribute("aria-label", "More serialize actions");
+    this.menuBtnEl.addEventListener("click", () => this.openMenu());
 
     this.formatBtn = toolbar.createEl("button", { cls: "bases-serializer-format" });
     this.formatBtn.setAttribute("aria-label", "Format");
     this.formatBtn.setAttribute("title", "Format");
     this.formatLabelEl = this.formatBtn.createSpan({ cls: "bases-serializer-format-label" });
     setIcon(this.formatBtn.createSpan({ cls: "bases-serializer-format-caret" }), "chevron-down");
-    this.formatBtn.addEventListener("click", (event) => this.openFormatMenu(event));
+    this.formatBtn.addEventListener("click", () => this.openFormatMenu());
 
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
@@ -247,7 +248,13 @@ class SerializerView extends BasesView {
     return file instanceof TFile ? file : null;
   }
 
-  private openFormatMenu(event: MouseEvent): void {
+  private showBelow(menu: Menu, el: HTMLElement | null): void {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    menu.showAtPosition({ x: rect.left, y: rect.bottom, width: rect.width, overlap: false });
+  }
+
+  private openFormatMenu(): void {
     const current = this.format();
     const menu = new Menu();
     for (const [value, label] of FORMATS) {
@@ -260,10 +267,10 @@ class SerializerView extends BasesView {
         });
       });
     }
-    menu.showAtMouseEvent(event);
+    this.showBelow(menu, this.formatBtn);
   }
 
-  private openMenu(event: MouseEvent): void {
+  private openMenu(): void {
     const menu = new Menu();
     menu.addItem((item) =>
       item.setTitle("Keep live view").setIcon("file-output").onClick(() => void this.serialize(true, false))
@@ -287,7 +294,7 @@ class SerializerView extends BasesView {
     menu.addItem((item) =>
       item.setTitle("Remove serialized block").setIcon("trash").onClick(() => void this.removeBlock())
     );
-    menu.showAtMouseEvent(event);
+    this.showBelow(menu, this.menuBtnEl);
   }
 
   private key(): string {

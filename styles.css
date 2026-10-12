@@ -95,6 +95,11 @@
   box-shadow: none;
 }
 
+.bases-serializer-format-label {
+  flex: 1;
+  text-align: left;
+}
+
 .bases-serializer-format-caret {
   display: inline-flex;
   align-items: center;
