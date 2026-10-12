@@ -467,7 +467,7 @@ ${content}` : content;
     }
     const target = String(this.config.get("target") || "").trim();
     if (!target) return null;
-    const path = target.endsWith(".md") ? target : `${target}.md`;
+    const path = (0, import_obsidian.normalizePath)(target.endsWith(".md") ? target : `${target}.md`);
     const file = this.app.vault.getAbstractFileByPath(path);
     return file instanceof import_obsidian.TFile ? file : null;
   }

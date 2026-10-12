@@ -9,6 +9,7 @@ import {
   Plugin,
   QueryController,
   TFile,
+  normalizePath,
   setIcon,
 } from "obsidian";
 
@@ -276,7 +277,7 @@ class SerializerView extends BasesView {
     }
     const target = String(this.config.get("target") || "").trim();
     if (!target) return null;
-    const path = target.endsWith(".md") ? target : `${target}.md`;
+    const path = normalizePath(target.endsWith(".md") ? target : `${target}.md`);
     const file = this.app.vault.getAbstractFileByPath(path);
     return file instanceof TFile ? file : null;
   }
