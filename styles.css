@@ -9,13 +9,25 @@
   padding: var(--size-4-2) 0;
 }
 
-/* Split button: [Serialize now | ▾] */
+/* Split button: [Serialize now | ▾] — sized to match the format dropdown */
 .bases-serializer-split {
   display: inline-flex;
 }
 
-.bases-serializer-split > button {
+.bases-serializer-split > button,
+select.bases-serializer-format {
+  height: auto;
+  padding: var(--size-4-1) var(--size-4-2);
+  font-size: var(--font-ui-small);
+  line-height: 1.2;
   border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background-color: var(--background-modifier-form-field);
+  color: var(--text-normal);
+  box-shadow: none;
+}
+
+.bases-serializer-split > button {
   border-radius: 0;
   margin: 0;
 }
@@ -41,13 +53,6 @@
 
 select.bases-serializer-format {
   max-width: 9em;
-  height: auto;
-  padding: var(--size-4-1) var(--size-4-2);
-  background-color: var(--background-modifier-form-field);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  box-shadow: none;
-  color: var(--text-normal);
 }
 
 .bases-serializer-status {

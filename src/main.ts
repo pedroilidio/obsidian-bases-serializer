@@ -61,6 +61,8 @@ class SerializerView extends BasesView {
     menuButton.addEventListener("click", (event) => this.openMenu(event));
 
     this.formatEl = toolbar.createEl("select", { cls: "dropdown bases-serializer-format" });
+    this.formatEl.setAttribute("aria-label", "Format");
+    this.formatEl.setAttribute("title", "Format");
     for (const [value, label] of FORMATS) {
       this.formatEl.createEl("option", { text: label, value });
     }
