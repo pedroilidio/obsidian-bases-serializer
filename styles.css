@@ -81,7 +81,6 @@ select.bases-serializer-format {
 }
 
 select.bases-serializer-format {
-  max-width: 9em;
   padding: 0 var(--size-4-2);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
