@@ -130,6 +130,11 @@
 }
 
 .bases-serializer-status {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   opacity: 0.7;
   font-size: 0.85em;
 }
@@ -184,8 +189,9 @@
   margin-bottom: 0;
 }
 
-/* Collapse button text on narrow views, matching the native Bases toolbar breakpoint. */
-@container bases-serializer (width < 590px) {
+/* Collapse button text on narrow views, matching the native Bases toolbar breakpoint.
+   578px = native 590px minus our extra inline padding (8px/side vs the header's 2px). */
+@container bases-serializer (width < 578px) {
   .bases-serializer-label,
   .bases-serializer-format-label {
     display: none;
