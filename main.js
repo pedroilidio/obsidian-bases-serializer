@@ -340,7 +340,10 @@ var SerializerView = class extends import_obsidian.BasesView {
       finish();
     }
     const { embedded } = this.embedInfo();
-    this.labelEl.setText(embedded ? "Serialize here" : "Serialize now");
+    const serializeLabel = embedded ? "Serialize here" : "Serialize now";
+    this.labelEl.setText(serializeLabel);
+    this.buttonEl.setAttribute("aria-label", serializeLabel);
+    this.buttonEl.setAttribute("title", serializeLabel);
     const file = this.targetFile(embedded);
     const where = file ? file.path : embedded ? "no active note" : "no target";
     this.statusEl.setText(`${countLabel(this.data.data.length)} \xB7 ${where}`);
