@@ -116,6 +116,9 @@ function upsertBlockAfterAnchor(text, anchor, key, body, meta = {}) {
 // src/main.ts
 var VIEW_TYPE = "bases-serializer";
 var DEFAULT_KEY = "default";
+function countLabel(count) {
+  return `${count} row${count === 1 ? "" : "s"}`;
+}
 var SerializerView = class extends import_obsidian.BasesView {
   constructor(controller, containerEl) {
     super(controller);
@@ -138,7 +141,7 @@ var SerializerView = class extends import_obsidian.BasesView {
     const { embedded } = this.embedInfo();
     this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
     this.statusEl.setText(
-      embedded ? `${this.data.data.length} row(s) \xB7 embedded` : `${this.data.data.length} row(s) \xB7 set a target note`
+      embedded ? `${countLabel(this.data.data.length)} \xB7 embedded` : `${countLabel(this.data.data.length)} \xB7 set a target note`
     );
     if (this.config.get("auto") && embedded) {
       if (this.timer !== null) window.clearTimeout(this.timer);
@@ -218,7 +221,7 @@ var SerializerView = class extends import_obsidian.BasesView {
       (data) => embedded ? upsertBlockAfterAnchor(data, anchor, key, body, meta) : upsertBlock(data, key, body, meta)
     );
     if (notify) {
-      new import_obsidian.Notice(`Bases Serializer: ${this.data.data.length} row(s) \u2192 ${file.path}`);
+      new import_obsidian.Notice(`Bases Serializer: ${countLabel(this.data.data.length)} \u2192 ${file.path}`);
     }
   }
 };

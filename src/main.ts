@@ -15,6 +15,10 @@ import { upsertBlock, upsertBlockAfterAnchor } from "./sentinels";
 const VIEW_TYPE = "bases-serializer";
 const DEFAULT_KEY = "default";
 
+function countLabel(count: number): string {
+  return `${count} row${count === 1 ? "" : "s"}`;
+}
+
 class SerializerView extends BasesView {
   type = VIEW_TYPE;
   private buttonEl: HTMLButtonElement;
@@ -47,8 +51,8 @@ class SerializerView extends BasesView {
     this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
     this.statusEl.setText(
       embedded
-        ? `${this.data.data.length} row(s) · embedded`
-        : `${this.data.data.length} row(s) · set a target note`
+        ? `${countLabel(this.data.data.length)} · embedded`
+        : `${countLabel(this.data.data.length)} · set a target note`
     );
 
     if (this.config.get("auto") && embedded) {
@@ -147,7 +151,7 @@ class SerializerView extends BasesView {
     );
 
     if (notify) {
-      new Notice(`Bases Serializer: ${this.data.data.length} row(s) → ${file.path}`);
+      new Notice(`Bases Serializer: ${countLabel(this.data.data.length)} → ${file.path}`);
     }
   }
 }
