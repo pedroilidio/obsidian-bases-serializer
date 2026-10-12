@@ -482,7 +482,7 @@ ${content}` : content;
     );
     menu.addSeparator();
     menu.addItem(
-      (item) => item.setTitle("Copy Markdown").setIcon("copy").onClick(() => void navigator.clipboard.writeText(this.body()))
+      (item) => item.setTitle("Copy Markdown").setIcon("copy").onClick(() => void this.copyMarkdown())
     );
     menu.addItem(
       (item) => item.setTitle("Open target note").setIcon("file-symlink").onClick(() => {
@@ -497,6 +497,19 @@ ${content}` : content;
   }
   key() {
     return String(this.config.get("key") || this.config.name || DEFAULT_KEY);
+  }
+  async copyMarkdown() {
+    const body = this.body();
+    if (!body.trim()) {
+      new import_obsidian.Notice("Bases Serializer: nothing to copy");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(body);
+      new import_obsidian.Notice(`Bases Serializer: copied ${countLabel(this.data.data.length)} to clipboard`);
+    } catch (e) {
+      new import_obsidian.Notice("Bases Serializer: could not copy to clipboard");
+    }
   }
   async removeBlock() {
     const { embedded } = this.embedInfo();

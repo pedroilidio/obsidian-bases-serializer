@@ -293,7 +293,7 @@ class SerializerView extends BasesView {
     );
     menu.addSeparator();
     menu.addItem((item) =>
-      item.setTitle("Copy Markdown").setIcon("copy").onClick(() => void navigator.clipboard.writeText(this.body()))
+      item.setTitle("Copy Markdown").setIcon("copy").onClick(() => void this.copyMarkdown())
     );
     menu.addItem((item) =>
       item.setTitle("Open target note").setIcon("file-symlink").onClick(() => {
@@ -309,6 +309,20 @@ class SerializerView extends BasesView {
 
   private key(): string {
     return String(this.config.get("key") || this.config.name || DEFAULT_KEY);
+  }
+
+  private async copyMarkdown(): Promise<void> {
+    const body = this.body();
+    if (!body.trim()) {
+      new Notice("Bases Serializer: nothing to copy");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(body);
+      new Notice(`Bases Serializer: copied ${countLabel(this.data.data.length)} to clipboard`);
+    } catch {
+      new Notice("Bases Serializer: could not copy to clipboard");
+    }
   }
 
   private async removeBlock(): Promise<void> {
