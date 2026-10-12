@@ -25,6 +25,17 @@ select.bases-serializer-format {
   border-radius: var(--radius-s);
 }
 
+/* Beat theme rules such as `button.mod-cta` for a matching border */
+.bases-serializer-split > button.mod-cta {
+  border: 1px solid var(--background-modifier-border);
+}
+
+.bases-serializer-serialize {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+}
+
 .bases-serializer-split > button {
   border-radius: 0;
   margin: 0;

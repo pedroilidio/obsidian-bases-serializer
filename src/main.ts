@@ -9,6 +9,7 @@ import {
   Plugin,
   QueryController,
   TFile,
+  setIcon,
 } from "obsidian";
 
 import { Format, PropertiesMode, RenderOptions, SerializedRow, renderGroups, renderRows } from "./render";
@@ -36,6 +37,7 @@ function countLabel(count: number): string {
 class SerializerView extends BasesView {
   type = VIEW_TYPE;
   private buttonEl: HTMLButtonElement;
+  private labelEl: HTMLSpanElement;
   private previewEl: HTMLElement;
   private statusEl: HTMLElement;
   private hintEl: HTMLElement;
@@ -52,7 +54,9 @@ class SerializerView extends BasesView {
     const toolbar = containerEl.createDiv({ cls: "bases-serializer-toolbar" });
 
     const split = toolbar.createDiv({ cls: "bases-serializer-split" });
-    this.buttonEl = split.createEl("button", { text: "Serialize now", cls: "mod-cta bases-serializer-serialize" });
+    this.buttonEl = split.createEl("button", { cls: "mod-cta bases-serializer-serialize" });
+    setIcon(this.buttonEl, "file-output");
+    this.labelEl = this.buttonEl.createSpan({ cls: "bases-serializer-label", text: "Serialize now" });
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
@@ -94,7 +98,7 @@ class SerializerView extends BasesView {
     }
 
     const { embedded } = this.embedInfo();
-    this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
+    this.labelEl.setText(embedded ? "Serialize here" : "Serialize now");
     const file = this.targetFile(embedded);
     const where = file ? file.path : embedded ? "no active note" : "no target";
     this.statusEl.setText(`${countLabel(this.data.data.length)} · ${where}`);

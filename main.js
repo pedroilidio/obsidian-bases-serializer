@@ -277,7 +277,9 @@ var SerializerView = class extends import_obsidian.BasesView {
     containerEl.addClass("bases-serializer");
     const toolbar = containerEl.createDiv({ cls: "bases-serializer-toolbar" });
     const split = toolbar.createDiv({ cls: "bases-serializer-split" });
-    this.buttonEl = split.createEl("button", { text: "Serialize now", cls: "mod-cta bases-serializer-serialize" });
+    this.buttonEl = split.createEl("button", { cls: "mod-cta bases-serializer-serialize" });
+    (0, import_obsidian.setIcon)(this.buttonEl, "file-output");
+    this.labelEl = this.buttonEl.createSpan({ cls: "bases-serializer-label", text: "Serialize now" });
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
@@ -314,7 +316,7 @@ var SerializerView = class extends import_obsidian.BasesView {
       this.previewEl.setText("(no rows)");
     }
     const { embedded } = this.embedInfo();
-    this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
+    this.labelEl.setText(embedded ? "Serialize here" : "Serialize now");
     const file = this.targetFile(embedded);
     const where = file ? file.path : embedded ? "no active note" : "no target";
     this.statusEl.setText(`${countLabel(this.data.data.length)} \xB7 ${where}`);
