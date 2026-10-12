@@ -16,7 +16,7 @@
 }
 
 .bases-serializer-split > button,
-select.bases-serializer-format {
+.bases-serializer-format {
   height: var(--input-height, 30px);
   font-size: var(--font-ui-small);
 }
@@ -80,16 +80,25 @@ select.bases-serializer-format {
   box-shadow: none;
 }
 
-select.bases-serializer-format {
-  width: auto;
+.bases-serializer-format {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
   min-width: 10.5em;
-  flex: 0 0 auto;
   padding: 0 var(--size-4-2);
+  line-height: 1;
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
   background-color: var(--background-modifier-form-field);
   color: var(--text-normal);
   box-shadow: none;
+}
+
+.bases-serializer-format-caret {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
 }
 
 .bases-serializer-status {

@@ -264,6 +264,7 @@ var FORMATS = [
   ["numbered", "Numbered"],
   ["table", "Table"]
 ];
+var FORMAT_LABELS = Object.fromEntries(FORMATS);
 function countLabel(count) {
   return `${count} row${count === 1 ? "" : "s"}`;
 }
@@ -287,16 +288,12 @@ var SerializerView = class extends import_obsidian.BasesView {
     const menuButton = split.createEl("button", { text: "\u25BE", cls: "mod-cta bases-serializer-menu" });
     menuButton.setAttribute("aria-label", "More serialize actions");
     menuButton.addEventListener("click", (event) => this.openMenu(event));
-    this.formatEl = toolbar.createEl("select", { cls: "dropdown bases-serializer-format" });
-    this.formatEl.setAttribute("aria-label", "Format");
-    this.formatEl.setAttribute("title", "Format");
-    for (const [value, label] of FORMATS) {
-      this.formatEl.createEl("option", { text: label, value });
-    }
-    this.formatEl.addEventListener("change", () => {
-      this.config.set("format", this.formatEl.value);
-      this.render();
-    });
+    this.formatBtn = toolbar.createEl("button", { cls: "bases-serializer-format" });
+    this.formatBtn.setAttribute("aria-label", "Format");
+    this.formatBtn.setAttribute("title", "Format");
+    this.formatLabelEl = this.formatBtn.createSpan({ cls: "bases-serializer-format-label" });
+    (0, import_obsidian.setIcon)(this.formatBtn.createSpan({ cls: "bases-serializer-format-caret" }), "chevron-down");
+    this.formatBtn.addEventListener("click", (event) => this.openFormatMenu(event));
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
     this.previewWrapEl = containerEl.createDiv({ cls: "bases-serializer-preview-wrap" });
@@ -309,9 +306,9 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.render();
   }
   render() {
-    var _a, _b;
+    var _a, _b, _c;
     const format = this.format();
-    this.formatEl.value = format;
+    this.formatLabelEl.setText((_a = FORMAT_LABELS[format]) != null ? _a : format);
     const body = this.body();
     this.previewWrapEl.style.setProperty(
       "--bases-serializer-preview-height",
@@ -326,7 +323,7 @@ var SerializerView = class extends import_obsidian.BasesView {
       this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
     };
     if (body) {
-      const sourcePath = (_b = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.path) != null ? _b : "";
+      const sourcePath = (_c = (_b = this.app.workspace.getActiveFile()) == null ? void 0 : _b.path) != null ? _c : "";
       void import_obsidian.MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this).then(finish);
     } else {
       this.previewEl.setText("(no rows)");
@@ -445,6 +442,21 @@ ${content}` : content;
     const path = target.endsWith(".md") ? target : `${target}.md`;
     const file = this.app.vault.getAbstractFileByPath(path);
     return file instanceof import_obsidian.TFile ? file : null;
+  }
+  openFormatMenu(event) {
+    const current = this.format();
+    const menu = new import_obsidian.Menu();
+    for (const [value, label] of FORMATS) {
+      menu.addItem((item) => {
+        item.setTitle(label);
+        if (value === current) item.setIcon("check");
+        item.onClick(() => {
+          this.config.set("format", value);
+          this.render();
+        });
+      });
+    }
+    menu.showAtMouseEvent(event);
   }
   openMenu(event) {
     const menu = new import_obsidian.Menu();

@@ -29,6 +29,7 @@ const FORMATS: Array<[Format, string]> = [
   ["numbered", "Numbered"],
   ["table", "Table"],
 ];
+const FORMAT_LABELS: Record<string, string> = Object.fromEntries(FORMATS);
 
 function countLabel(count: number): string {
   return `${count} row${count === 1 ? "" : "s"}`;
@@ -43,7 +44,8 @@ class SerializerView extends BasesView {
   private previewEl: HTMLElement;
   private statusEl: HTMLElement;
   private hintEl: HTMLElement;
-  private formatEl: HTMLSelectElement;
+  private formatBtn: HTMLButtonElement;
+  private formatLabelEl: HTMLSpanElement;
   private containerEl: HTMLElement;
   private timer: number | null = null;
 
@@ -67,16 +69,12 @@ class SerializerView extends BasesView {
     menuButton.setAttribute("aria-label", "More serialize actions");
     menuButton.addEventListener("click", (event) => this.openMenu(event));
 
-    this.formatEl = toolbar.createEl("select", { cls: "dropdown bases-serializer-format" });
-    this.formatEl.setAttribute("aria-label", "Format");
-    this.formatEl.setAttribute("title", "Format");
-    for (const [value, label] of FORMATS) {
-      this.formatEl.createEl("option", { text: label, value });
-    }
-    this.formatEl.addEventListener("change", () => {
-      this.config.set("format", this.formatEl.value);
-      this.render();
-    });
+    this.formatBtn = toolbar.createEl("button", { cls: "bases-serializer-format" });
+    this.formatBtn.setAttribute("aria-label", "Format");
+    this.formatBtn.setAttribute("title", "Format");
+    this.formatLabelEl = this.formatBtn.createSpan({ cls: "bases-serializer-format-label" });
+    setIcon(this.formatBtn.createSpan({ cls: "bases-serializer-format-caret" }), "chevron-down");
+    this.formatBtn.addEventListener("click", (event) => this.openFormatMenu(event));
 
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
@@ -93,7 +91,7 @@ class SerializerView extends BasesView {
 
   private render(): void {
     const format = this.format();
-    this.formatEl.value = format;
+    this.formatLabelEl.setText(FORMAT_LABELS[format] ?? format);
 
     const body = this.body();
     this.previewWrapEl.style.setProperty(
@@ -247,6 +245,22 @@ class SerializerView extends BasesView {
     const path = target.endsWith(".md") ? target : `${target}.md`;
     const file = this.app.vault.getAbstractFileByPath(path);
     return file instanceof TFile ? file : null;
+  }
+
+  private openFormatMenu(event: MouseEvent): void {
+    const current = this.format();
+    const menu = new Menu();
+    for (const [value, label] of FORMATS) {
+      menu.addItem((item) => {
+        item.setTitle(label);
+        if (value === current) item.setIcon("check");
+        item.onClick(() => {
+          this.config.set("format", value);
+          this.render();
+        });
+      });
+    }
+    menu.showAtMouseEvent(event);
   }
 
   private openMenu(event: MouseEvent): void {
