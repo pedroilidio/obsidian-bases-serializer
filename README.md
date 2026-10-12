@@ -12,6 +12,7 @@
 <p align="center">
   <img alt="Obsidian 1.10.0+" src="https://img.shields.io/badge/Obsidian-1.10.0%2B-7c3aed" />
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-7c3aed" />
+  <a href="https://www.buymeacoffee.com/pcbilidiov"><img alt="Buy Me a Coffee" src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=000000" /></a>
 </p>
 
 ---
@@ -150,6 +151,14 @@ is unit-tested without the app. The Bases view wrapper lives in `src/main.ts`.
 - Read-only with respect to the queried notes: it only ever writes the target
   note (or, on freeze, the note containing the embed).
 - `List` renders bare bullets; use `Checklist` for `- [ ]` tasks.
+
+## Support
+
+If Bases Serializer saves you time, you can buy me a coffee — it keeps the ❄️ in shape.
+
+<p>
+  <a href="https://www.buymeacoffee.com/pcbilidiov"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" width="180" /></a>
+</p>
 
 ## License
 
