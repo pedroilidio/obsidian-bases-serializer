@@ -50,3 +50,23 @@ export function renderRows(
   if (format === "table") return renderTable(rows, headers);
   return rows.map((row) => renderRow(row, format, suffixIndex)).join("\n");
 }
+
+export interface SerializedGroup {
+  title: string | null;
+  rows: SerializedRow[];
+}
+
+export function renderGroups(
+  groups: SerializedGroup[],
+  format: Format = "list",
+  suffixIndex?: number,
+  headers: string[] = []
+): string {
+  const parts: string[] = [];
+  for (const group of groups) {
+    const body = renderRows(group.rows, format, suffixIndex, headers);
+    if (!body) continue;
+    parts.push(group.title ? `### ${group.title}\n\n${body}` : body);
+  }
+  return parts.join("\n\n");
+}

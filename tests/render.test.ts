@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { renderRows, renderTable, SerializedRow } from "../src/render";
+import { renderGroups, renderRows, renderTable, SerializedRow } from "../src/render";
 
 const rows: SerializedRow[] = [
   { link: "[[A]]", cells: ["2026-10-13", "open"] },
@@ -33,5 +33,23 @@ describe("renderTable", () => {
   it("escapes pipes in cells", () => {
     const table = renderTable([{ link: "[[A]]", cells: ["a|b"] }], ["File", "X"]);
     expect(table).toContain("a\\|b");
+  });
+});
+
+describe("renderGroups", () => {
+  it("adds a heading for titled groups and passes through untitled ones", () => {
+    const out = renderGroups(
+      [
+        { title: "Today", rows: [{ link: "[[A]]", cells: [] }] },
+        { title: null, rows: [{ link: "[[B]]", cells: [] }] },
+      ],
+      "list"
+    );
+    expect(out).toContain("### Today\n\n- [[A]]");
+    expect(out).toContain("- [[B]]");
+  });
+
+  it("skips empty groups", () => {
+    expect(renderGroups([{ title: "X", rows: [] }], "list")).toBe("");
   });
 });

@@ -11,7 +11,7 @@ import {
   TFile,
 } from "obsidian";
 
-import { Format, SerializedRow, renderRows } from "./render";
+import { Format, SerializedRow, renderGroups, renderRows } from "./render";
 import { solidifyAnchorToText, stripBlock, upsertBlock, upsertBlockAfterAnchor } from "./sentinels";
 
 const VIEW_TYPE = "bases-serializer";
@@ -84,12 +84,16 @@ class SerializerView extends BasesView {
     return { embedded: true, anchor: src.split("/").pop() ?? src };
   }
 
-  private rows(): SerializedRow[] {
+  private row(entry: BasesEntry): SerializedRow {
     const order = this.config.getOrder();
-    return this.data.data.map((entry) => ({
+    return {
       link: this.link(entry),
       cells: order.map((property) => this.cell(entry, property)),
-    }));
+    };
+  }
+
+  private rows(): SerializedRow[] {
+    return this.data.data.map((entry) => this.row(entry));
   }
 
   private link(entry: BasesEntry): string {
@@ -120,7 +124,17 @@ class SerializerView extends BasesView {
       if (index >= 0) suffixIndex = index;
     }
 
-    return renderRows(this.rows(), format, suffixIndex, this.headers());
+    const headers = this.headers();
+
+    if (Boolean(this.config.get("group")) && this.data.groupedData.some((group) => group.hasKey())) {
+      const groups = this.data.groupedData.map((group) => ({
+        title: group.hasKey() && group.key ? group.key.toString() : null,
+        rows: group.entries.map((entry) => this.row(entry)),
+      }));
+      return renderGroups(groups, format, suffixIndex, headers);
+    }
+
+    return renderRows(this.rows(), format, suffixIndex, headers);
   }
 
   private targetFile(embedded: boolean): TFile | null {
@@ -252,6 +266,12 @@ export default class BasesSerializerPlugin extends Plugin {
           key: "solidify",
           displayName: "Fully solidify (remove embed and sentinels)",
           default: false,
+        },
+        {
+          type: "toggle",
+          key: "group",
+          displayName: "Group headings (from the Base groupBy)",
+          default: true,
         },
       ],
     });

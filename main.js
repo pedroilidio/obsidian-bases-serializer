@@ -54,6 +54,17 @@ function renderRows(rows, format = "list", suffixIndex, headers = []) {
   if (format === "table") return renderTable(rows, headers);
   return rows.map((row) => renderRow(row, format, suffixIndex)).join("\n");
 }
+function renderGroups(groups, format = "list", suffixIndex, headers = []) {
+  const parts = [];
+  for (const group of groups) {
+    const body = renderRows(group.rows, format, suffixIndex, headers);
+    if (!body) continue;
+    parts.push(group.title ? `### ${group.title}
+
+${body}` : body);
+  }
+  return parts.join("\n\n");
+}
 
 // src/sentinels.ts
 var SENTINEL_OPEN = "%% bases-serializer";
@@ -191,12 +202,15 @@ var SerializerView = class extends import_obsidian.BasesView {
     const src = (_b = withSrc.getAttribute("src")) != null ? _b : "";
     return { embedded: true, anchor: (_c = src.split("/").pop()) != null ? _c : src };
   }
-  rows() {
+  row(entry) {
     const order = this.config.getOrder();
-    return this.data.data.map((entry) => ({
+    return {
       link: this.link(entry),
       cells: order.map((property) => this.cell(entry, property))
-    }));
+    };
+  }
+  rows() {
+    return this.data.data.map((entry) => this.row(entry));
   }
   link(entry) {
     try {
@@ -221,7 +235,15 @@ var SerializerView = class extends import_obsidian.BasesView {
       const index = order.indexOf(suffixProperty);
       if (index >= 0) suffixIndex = index;
     }
-    return renderRows(this.rows(), format, suffixIndex, this.headers());
+    const headers = this.headers();
+    if (Boolean(this.config.get("group")) && this.data.groupedData.some((group) => group.hasKey())) {
+      const groups = this.data.groupedData.map((group) => ({
+        title: group.hasKey() && group.key ? group.key.toString() : null,
+        rows: group.entries.map((entry) => this.row(entry))
+      }));
+      return renderGroups(groups, format, suffixIndex, headers);
+    }
+    return renderRows(this.rows(), format, suffixIndex, headers);
   }
   targetFile(embedded) {
     if (embedded) {
@@ -329,6 +351,12 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
           key: "solidify",
           displayName: "Fully solidify (remove embed and sentinels)",
           default: false
+        },
+        {
+          type: "toggle",
+          key: "group",
+          displayName: "Group headings (from the Base groupBy)",
+          default: true
         }
       ]
     });

@@ -32,6 +32,7 @@ If the base is open as its own tab, set a **Target note** in the view options an
 - **Checklist suffix property** — optional property id appended to checklist items (e.g. `note.due`).
 - **Auto-serialize when embedded** — re-write when the data updates (debounced).
 - **Fully solidify (remove embed and sentinels)** — replace the live `![[base#view]]` with plain Markdown (no embed, no sentinel comments), so the note is fully static (default off).
+- **Group headings (from the Base groupBy)** — when the Base groups rows, emit `### <group>` headings using Bases' grouped results (default on).
 
 ### Button menu
 Next to **Serialize** there's a **▾** menu with one-off actions that override the view options:
