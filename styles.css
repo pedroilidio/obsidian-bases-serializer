@@ -1,3 +1,7 @@
+.bases-serializer {
+  padding-inline: var(--size-4-2);
+}
+
 .bases-serializer-toolbar {
   display: flex;
   align-items: center;
@@ -36,6 +40,13 @@
 
 .bases-serializer-format {
   max-width: 9em;
+  height: auto;
+  padding: var(--size-4-1) var(--size-4-2);
+  background-color: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  color: var(--text-normal);
 }
 
 .bases-serializer-status {
@@ -55,17 +66,4 @@
 
 .bases-serializer-preview {
   background: var(--background-secondary);
-  padding: var(--size-4-2);
-  border-radius: var(--radius-s);
-  overflow: auto;
-  max-height: 50vh;
-  margin-top: var(--size-4-2);
-}
-
-.bases-serializer-preview > :first-child {
-  margin-top: 0;
-}
-
-.bases-serializer-preview > :last-child {
-  margin-bottom: 0;
-}
+  pa
