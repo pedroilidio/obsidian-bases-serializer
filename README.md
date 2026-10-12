@@ -15,18 +15,22 @@ are readable by other tools. Re-serialize any time to update the block.
 
 ## Usage
 
-1. Open a `.base` file.
-2. Add a **Serializer** view (view selector → Serializer).
-3. In the view's options (toolbar), set:
-   - **Target note** — where the Markdown is written.
-   - **Block key** — the sentinel key (defaults to the view name).
-   - **Format** — `List`, `Checklist`, or `Table`.
-   - **Checklist suffix property** — optional property id appended to checklist items (e.g. `note.due`).
-   - **Auto-serialize on change** — re-write when the data updates (debounced).
-4. Click **Serialize now**. A preview is shown above the button.
+### Embedded (recommended)
+1. Write a base **inside a note**: `![[tasks.base#Today]]`.
+2. Add the **Serializer** view to that base (`views` → add a view of type *Serializer*); the embed shows the Serializer preview.
+3. Click **Serialize here**. The frozen Markdown is inserted **directly below the embed** in that note (under a sentinel block keyed by the view).
 
-Because filtering/sorting/limits live in the **Base** (Obsidian's query engine),
-the serializer just renders the view's current rows.
+This keeps the snapshot next to the query it came from — the base's `this`.
+
+### Standalone
+If the base is open as its own tab, set a **Target note** in the view options and click **Serialize now** (the block is appended to that note).
+
+### View options
+- **Target note (standalone views)** — where to write when the view isn't embedded.
+- **Block key** — sentinel key (defaults to the view name).
+- **Format** — `List`, `Checklist`, or `Table`.
+- **Checklist suffix property** — optional property id appended to checklist items (e.g. `note.due`).
+- **Auto-serialize when embedded** — re-write when the data updates (debounced).
 
 ## Output format
 

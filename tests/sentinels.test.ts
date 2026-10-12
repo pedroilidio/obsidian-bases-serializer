@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { findBlock, sentinelLine, stripBlock, upsertBlock } from "../src/sentinels";
+import {
+  findBlock,
+  sentinelLine,
+  stripBlock,
+  upsertBlock,
+  upsertBlockAfterAnchor,
+} from "../src/sentinels";
 
 describe("sentinelLine", () => {
   it("includes the key and meta", () => {
@@ -43,5 +49,28 @@ describe("findBlock / stripBlock", () => {
   it("finds nothing when the key is absent", () => {
     expect(findBlock("hi\n".split("\n"), "x")).toBeNull();
     expect(stripBlock("hi\n", "x")).toBe("hi\n");
+  });
+});
+
+describe("upsertBlockAfterAnchor", () => {
+  it("inserts the block right after the embed line", () => {
+    const text = "# Note\n\n![[tasks.base#Today]]\n\nsome tail\n";
+    const out = upsertBlockAfterAnchor(text, "tasks.base#Today", "Today", "- [[A]]");
+    const lines = out.split("\n");
+    const at = lines.findIndex((line) => line.includes("tasks.base#Today"));
+    expect(lines[at + 2]).toContain('%% bases-serializer key="Today" %%');
+    expect(out).toContain("some tail");
+  });
+
+  it("replaces an existing block rather than duplicating", () => {
+    let out = upsertBlockAfterAnchor("![[tasks.base#Today]]\n", "tasks.base#Today", "Today", "- [[A]]");
+    out = upsertBlockAfterAnchor(out, "tasks.base#Today", "Today", "- [[B]]");
+    expect(out).toContain("- [[B]]");
+    expect(out).not.toContain("- [[A]]");
+  });
+
+  it("appends when the anchor is missing", () => {
+    const out = upsertBlockAfterAnchor("# Note\n", "missing.base#X", "K", "- [[A]]");
+    expect(out).toContain("- [[A]]");
   });
 });

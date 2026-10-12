@@ -10,25 +10,28 @@ import {
 } from "obsidian";
 
 import { Format, SerializedRow, renderRows } from "./render";
-import { upsertBlock } from "./sentinels";
+import { upsertBlock, upsertBlockAfterAnchor } from "./sentinels";
 
 const VIEW_TYPE = "bases-serializer";
 const DEFAULT_KEY = "default";
 
 class SerializerView extends BasesView {
   type = VIEW_TYPE;
+  private buttonEl: HTMLButtonElement;
   private previewEl: HTMLElement;
   private statusEl: HTMLElement;
+  private containerEl: HTMLElement;
   private timer: number | null = null;
 
   constructor(controller: QueryController, containerEl: HTMLElement) {
     super(controller);
+    this.containerEl = containerEl;
     containerEl.empty();
     containerEl.addClass("bases-serializer");
 
     const toolbar = containerEl.createDiv({ cls: "bases-serializer-toolbar" });
-    const button = toolbar.createEl("button", { text: "Serialize now" });
-    button.addEventListener("click", () => {
+    this.buttonEl = toolbar.createEl("button", { text: "Serialize now" });
+    this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
@@ -39,14 +42,31 @@ class SerializerView extends BasesView {
   onDataUpdated(): void {
     const body = this.body();
     this.previewEl.setText(body || "(no rows)");
-    this.statusEl.setText(`${this.data.data.length} row(s)`);
 
-    if (this.config.get("auto")) {
+    const { embedded } = this.embedInfo();
+    this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
+    this.statusEl.setText(
+      embedded
+        ? `${this.data.data.length} row(s) · embedded`
+        : `${this.data.data.length} row(s) · set a target note`
+    );
+
+    if (this.config.get("auto") && embedded) {
       if (this.timer !== null) window.clearTimeout(this.timer);
       this.timer = window.setTimeout(() => {
         void this.serialize(false);
       }, 800);
     }
+  }
+
+  /** Whether this view is embedded in a note, and the embed's `src`. */
+  private embedInfo(): { embedded: boolean; anchor: string } {
+    const embed = this.containerEl.closest(".internal-embed, .markdown-embed");
+    if (!embed) return { embedded: false, anchor: "" };
+    // Prefer the innermost element that carries a `src` attribute.
+    const withSrc = this.containerEl.closest("[src]") ?? embed;
+    const src = withSrc.getAttribute("src") ?? "";
+    return { embedded: true, anchor: src.split("/").pop() ?? src };
   }
 
   private rows(): SerializedRow[] {
@@ -88,29 +108,46 @@ class SerializerView extends BasesView {
     return renderRows(this.rows(), format, suffixIndex, this.headers());
   }
 
-  async serialize(notify: boolean): Promise<void> {
-    const target = String(this.config.get("target") || "").trim();
-    if (!target) {
-      if (notify) new Notice("Bases Serializer: set a target note in the view options");
-      return;
+  private targetFile(embedded: boolean): TFile | null {
+    // Embedded: write into the note that contains the embed (its `this`).
+    if (embedded) {
+      const active = this.app.workspace.getActiveFile();
+      if (active) return active;
     }
-
+    // Standalone: use the configured target note.
+    const target = String(this.config.get("target") || "").trim();
+    if (!target) return null;
     const path = target.endsWith(".md") ? target : `${target}.md`;
     const file = this.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof TFile)) {
-      if (notify) new Notice(`Bases Serializer: target not found: ${path}`);
+    return file instanceof TFile ? file : null;
+  }
+
+  async serialize(notify: boolean): Promise<void> {
+    const { embedded, anchor } = this.embedInfo();
+    const file = this.targetFile(embedded);
+    if (!file) {
+      if (notify) {
+        new Notice(
+          embedded
+            ? "Bases Serializer: no active note to write into"
+            : "Bases Serializer: set a target note (or embed this view in a note)"
+        );
+      }
       return;
     }
 
     const key = String(this.config.get("key") || this.config.name || DEFAULT_KEY);
     const body = this.body();
+    const meta = { format: String(this.config.get("format") || "list") };
 
     await this.app.vault.process(file, (data) =>
-      upsertBlock(data, key, body, { format: String(this.config.get("format") || "list") })
+      embedded
+        ? upsertBlockAfterAnchor(data, anchor, key, body, meta)
+        : upsertBlock(data, key, body, meta)
     );
 
     if (notify) {
-      new Notice(`Bases Serializer: ${this.data.data.length} row(s) → ${path}`);
+      new Notice(`Bases Serializer: ${this.data.data.length} row(s) → ${file.path}`);
     }
   }
 }
@@ -125,7 +162,7 @@ export default class BasesSerializerPlugin extends Plugin {
         {
           type: "file",
           key: "target",
-          displayName: "Target note",
+          displayName: "Target note (standalone views)",
           placeholder: "folder/note.md",
         },
         {
@@ -150,7 +187,7 @@ export default class BasesSerializerPlugin extends Plugin {
         {
           type: "toggle",
           key: "auto",
-          displayName: "Auto-serialize on change",
+          displayName: "Auto-serialize when embedded",
           default: false,
         },
       ],

@@ -59,3 +59,35 @@ export function stripBlock(text: string, key: string): string {
   if (!range) return text;
   return [...lines.slice(0, range[0]), ...lines.slice(range[1] + 1)].join("\n");
 }
+
+/**
+ * Upsert a block, preferring to place it right after the first line that
+ * contains `anchor` (e.g. the `![[base.base#View]]` embed). Falls back to
+ * appending at the end when the anchor is missing.
+ */
+export function upsertBlockAfterAnchor(
+  text: string,
+  anchor: string,
+  key: string,
+  body: string,
+  meta: SentinelMeta = {}
+): string {
+  const lines = text.split("\n");
+  const block = [sentinelLine(key, meta), body.replace(/\n+$/, ""), SENTINEL_CLOSE];
+
+  const range = findBlock(lines, key);
+  if (range) {
+    return [...lines.slice(0, range[0]), ...block, ...lines.slice(range[1] + 1)].join("\n");
+  }
+
+  if (anchor) {
+    const at = lines.findIndex((line) => line.includes(anchor));
+    if (at >= 0) {
+      return [...lines.slice(0, at + 1), "", ...block, "", ...lines.slice(at + 1)].join("\n");
+    }
+  }
+
+  const trimmed = text.replace(/\n+$/, "");
+  const separator = trimmed === "" ? "" : "\n\n";
+  return `${trimmed}${separator}${block.join("\n")}\n`;
+}

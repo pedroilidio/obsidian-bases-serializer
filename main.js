@@ -94,6 +94,24 @@ function upsertBlock(text, key, body, meta = {}) {
   return `${trimmed}${separator}${block.join("\n")}
 `;
 }
+function upsertBlockAfterAnchor(text, anchor, key, body, meta = {}) {
+  const lines = text.split("\n");
+  const block = [sentinelLine(key, meta), body.replace(/\n+$/, ""), SENTINEL_CLOSE];
+  const range = findBlock(lines, key);
+  if (range) {
+    return [...lines.slice(0, range[0]), ...block, ...lines.slice(range[1] + 1)].join("\n");
+  }
+  if (anchor) {
+    const at = lines.findIndex((line) => line.includes(anchor));
+    if (at >= 0) {
+      return [...lines.slice(0, at + 1), "", ...block, "", ...lines.slice(at + 1)].join("\n");
+    }
+  }
+  const trimmed = text.replace(/\n+$/, "");
+  const separator = trimmed === "" ? "" : "\n\n";
+  return `${trimmed}${separator}${block.join("\n")}
+`;
+}
 
 // src/main.ts
 var VIEW_TYPE = "bases-serializer";
@@ -103,11 +121,12 @@ var SerializerView = class extends import_obsidian.BasesView {
     super(controller);
     this.type = VIEW_TYPE;
     this.timer = null;
+    this.containerEl = containerEl;
     containerEl.empty();
     containerEl.addClass("bases-serializer");
     const toolbar = containerEl.createDiv({ cls: "bases-serializer-toolbar" });
-    const button = toolbar.createEl("button", { text: "Serialize now" });
-    button.addEventListener("click", () => {
+    this.buttonEl = toolbar.createEl("button", { text: "Serialize now" });
+    this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
     });
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
@@ -116,13 +135,26 @@ var SerializerView = class extends import_obsidian.BasesView {
   onDataUpdated() {
     const body = this.body();
     this.previewEl.setText(body || "(no rows)");
-    this.statusEl.setText(`${this.data.data.length} row(s)`);
-    if (this.config.get("auto")) {
+    const { embedded } = this.embedInfo();
+    this.buttonEl.setText(embedded ? "Serialize here" : "Serialize now");
+    this.statusEl.setText(
+      embedded ? `${this.data.data.length} row(s) \xB7 embedded` : `${this.data.data.length} row(s) \xB7 set a target note`
+    );
+    if (this.config.get("auto") && embedded) {
       if (this.timer !== null) window.clearTimeout(this.timer);
       this.timer = window.setTimeout(() => {
         void this.serialize(false);
       }, 800);
     }
+  }
+  /** Whether this view is embedded in a note, and the embed's `src`. */
+  embedInfo() {
+    var _a, _b, _c;
+    const embed = this.containerEl.closest(".internal-embed, .markdown-embed");
+    if (!embed) return { embedded: false, anchor: "" };
+    const withSrc = (_a = this.containerEl.closest("[src]")) != null ? _a : embed;
+    const src = (_b = withSrc.getAttribute("src")) != null ? _b : "";
+    return { embedded: true, anchor: (_c = src.split("/").pop()) != null ? _c : src };
   }
   rows() {
     const order = this.config.getOrder();
@@ -156,26 +188,37 @@ var SerializerView = class extends import_obsidian.BasesView {
     }
     return renderRows(this.rows(), format, suffixIndex, this.headers());
   }
-  async serialize(notify) {
-    const target = String(this.config.get("target") || "").trim();
-    if (!target) {
-      if (notify) new import_obsidian.Notice("Bases Serializer: set a target note in the view options");
-      return;
+  targetFile(embedded) {
+    if (embedded) {
+      const active = this.app.workspace.getActiveFile();
+      if (active) return active;
     }
+    const target = String(this.config.get("target") || "").trim();
+    if (!target) return null;
     const path = target.endsWith(".md") ? target : `${target}.md`;
     const file = this.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof import_obsidian.TFile)) {
-      if (notify) new import_obsidian.Notice(`Bases Serializer: target not found: ${path}`);
+    return file instanceof import_obsidian.TFile ? file : null;
+  }
+  async serialize(notify) {
+    const { embedded, anchor } = this.embedInfo();
+    const file = this.targetFile(embedded);
+    if (!file) {
+      if (notify) {
+        new import_obsidian.Notice(
+          embedded ? "Bases Serializer: no active note to write into" : "Bases Serializer: set a target note (or embed this view in a note)"
+        );
+      }
       return;
     }
     const key = String(this.config.get("key") || this.config.name || DEFAULT_KEY);
     const body = this.body();
+    const meta = { format: String(this.config.get("format") || "list") };
     await this.app.vault.process(
       file,
-      (data) => upsertBlock(data, key, body, { format: String(this.config.get("format") || "list") })
+      (data) => embedded ? upsertBlockAfterAnchor(data, anchor, key, body, meta) : upsertBlock(data, key, body, meta)
     );
     if (notify) {
-      new import_obsidian.Notice(`Bases Serializer: ${this.data.data.length} row(s) \u2192 ${path}`);
+      new import_obsidian.Notice(`Bases Serializer: ${this.data.data.length} row(s) \u2192 ${file.path}`);
     }
   }
 };
@@ -189,7 +232,7 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
         {
           type: "file",
           key: "target",
-          displayName: "Target note",
+          displayName: "Target note (standalone views)",
           placeholder: "folder/note.md"
         },
         {
@@ -214,7 +257,7 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
         {
           type: "toggle",
           key: "auto",
-          displayName: "Auto-serialize on change",
+          displayName: "Auto-serialize when embedded",
           default: false
         }
       ]
