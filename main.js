@@ -307,9 +307,18 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
     this.previewWrapEl = containerEl.createDiv({ cls: "bases-serializer-preview-wrap" });
     this.previewEl = this.previewWrapEl.createDiv({ cls: "bases-serializer-preview markdown-rendered" });
-    this.previewEl.addEventListener("scroll", () => {
-      this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
-    });
+    this.previewEl.addEventListener("scroll", () => this.updateScrollState());
+    const resizeObserver = new ResizeObserver(() => this.updateScrollState());
+    this.register(() => resizeObserver.disconnect());
+    resizeObserver.observe(this.previewEl);
+  }
+  /** Refresh the fade classes: bottom fade when scrollable, both edges once scrolled. */
+  updateScrollState() {
+    this.previewEl.toggleClass(
+      "is-scrollable",
+      this.previewEl.scrollHeight > this.previewEl.clientHeight + 1
+    );
+    this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
   }
   onDataUpdated() {
     this.render();
@@ -317,21 +326,18 @@ var SerializerView = class extends import_obsidian.BasesView {
   render() {
     var _a, _b, _c, _d;
     const format = this.format();
-    (0, import_obsidian.setIcon)(this.formatIconEl, (_a = FORMAT_ICONS[format]) != null ? _a : "list");
-    this.formatLabelEl.setText((_b = FORMAT_LABELS[format]) != null ? _b : format);
+    const formatLabel = (_a = FORMAT_LABELS[format]) != null ? _a : format;
+    (0, import_obsidian.setIcon)(this.formatIconEl, (_b = FORMAT_ICONS[format]) != null ? _b : "list");
+    this.formatLabelEl.setText(formatLabel);
+    this.formatBtn.setAttribute("title", `Format: ${formatLabel}`);
+    this.formatBtn.setAttribute("aria-label", `Format: ${formatLabel}`);
     const body = this.body();
     this.previewWrapEl.style.setProperty(
       "--bases-serializer-preview-height",
       String(this.config.get("previewHeight") || "50vh")
     );
     this.previewEl.empty();
-    const finish = () => {
-      this.previewEl.toggleClass(
-        "is-scrollable",
-        this.previewEl.scrollHeight > this.previewEl.clientHeight + 1
-      );
-      this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
-    };
+    const finish = () => this.updateScrollState();
     if (body) {
       const sourcePath = (_d = (_c = this.app.workspace.getActiveFile()) == null ? void 0 : _c.path) != null ? _d : "";
       void import_obsidian.MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this).then(finish);
@@ -505,14 +511,17 @@ ${content}` : content;
     this.render();
   }
   openMenu() {
+    const { embedded } = this.embedInfo();
     const menu = new import_obsidian.Menu();
-    menu.addItem(
-      (item) => item.setTitle("Keep live view").setIcon("file-output").onClick(() => void this.serialize(true, false))
-    );
-    menu.addItem(
-      (item) => item.setTitle("Freeze \xB7 replace embed with text").setIcon("file-x").onClick(() => void this.serialize(true, true))
-    );
-    menu.addSeparator();
+    if (embedded) {
+      menu.addItem(
+        (item) => item.setTitle("Keep live view").setIcon("file-output").onClick(() => void this.serialize(true, false))
+      );
+      menu.addItem(
+        (item) => item.setTitle("Freeze \xB7 replace embed with text").setIcon("file-x").onClick(() => void this.serialize(true, true))
+      );
+      menu.addSeparator();
+    }
     menu.addItem(
       (item) => item.setTitle("Copy Markdown").setIcon("copy").onClick(() => void this.copyMarkdown())
     );

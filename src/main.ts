@@ -92,9 +92,19 @@ class SerializerView extends BasesView {
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
     this.previewWrapEl = containerEl.createDiv({ cls: "bases-serializer-preview-wrap" });
     this.previewEl = this.previewWrapEl.createDiv({ cls: "bases-serializer-preview markdown-rendered" });
-    this.previewEl.addEventListener("scroll", () => {
-      this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
-    });
+    this.previewEl.addEventListener("scroll", () => this.updateScrollState());
+    const resizeObserver = new ResizeObserver(() => this.updateScrollState());
+    this.register(() => resizeObserver.disconnect());
+    resizeObserver.observe(this.previewEl);
+  }
+
+  /** Refresh the fade classes: bottom fade when scrollable, both edges once scrolled. */
+  private updateScrollState(): void {
+    this.previewEl.toggleClass(
+      "is-scrollable",
+      this.previewEl.scrollHeight > this.previewEl.clientHeight + 1
+    );
+    this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
   }
 
   onDataUpdated(): void {
@@ -103,8 +113,11 @@ class SerializerView extends BasesView {
 
   private render(): void {
     const format = this.format();
+    const formatLabel = FORMAT_LABELS[format] ?? format;
     setIcon(this.formatIconEl, FORMAT_ICONS[format] ?? "list");
-    this.formatLabelEl.setText(FORMAT_LABELS[format] ?? format);
+    this.formatLabelEl.setText(formatLabel);
+    this.formatBtn.setAttribute("title", `Format: ${formatLabel}`);
+    this.formatBtn.setAttribute("aria-label", `Format: ${formatLabel}`);
 
     const body = this.body();
     this.previewWrapEl.style.setProperty(
@@ -113,13 +126,7 @@ class SerializerView extends BasesView {
     );
     this.previewEl.empty();
 
-    const finish = () => {
-      this.previewEl.toggleClass(
-        "is-scrollable",
-        this.previewEl.scrollHeight > this.previewEl.clientHeight + 1
-      );
-      this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
-    };
+    const finish = () => this.updateScrollState();
 
     if (body) {
       const sourcePath = this.app.workspace.getActiveFile()?.path ?? "";
@@ -318,17 +325,20 @@ class SerializerView extends BasesView {
   }
 
   private openMenu(): void {
+    const { embedded } = this.embedInfo();
     const menu = new Menu();
-    menu.addItem((item) =>
-      item.setTitle("Keep live view").setIcon("file-output").onClick(() => void this.serialize(true, false))
-    );
-    menu.addItem((item) =>
-      item
-        .setTitle("Freeze · replace embed with text")
-        .setIcon("file-x")
-        .onClick(() => void this.serialize(true, true))
-    );
-    menu.addSeparator();
+    if (embedded) {
+      menu.addItem((item) =>
+        item.setTitle("Keep live view").setIcon("file-output").onClick(() => void this.serialize(true, false))
+      );
+      menu.addItem((item) =>
+        item
+          .setTitle("Freeze · replace embed with text")
+          .setIcon("file-x")
+          .onClick(() => void this.serialize(true, true))
+      );
+      menu.addSeparator();
+    }
     menu.addItem((item) =>
       item.setTitle("Copy Markdown").setIcon("copy").onClick(() => void this.copyMarkdown())
     );
