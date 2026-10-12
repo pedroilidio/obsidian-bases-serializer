@@ -39,7 +39,7 @@
   color: var(--text-on-accent);
 }
 
-.bases-serializer-format {
+select.bases-serializer-format {
   max-width: 9em;
   height: auto;
   padding: var(--size-4-1) var(--size-4-2);
