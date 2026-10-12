@@ -116,10 +116,14 @@
 .bases-serializer-format-label {
   /* Same var Obsidian's native Bases toolbar buttons use. */
   display: var(--bases-toolbar-label-display, block);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .bases-serializer-format-label {
-  flex: 1;
+  flex: 1 1 auto;
   text-align: left;
 }
 
