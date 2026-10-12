@@ -446,7 +446,7 @@ ${content}` : content;
   showBelow(menu, el) {
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 });
+    menu.showAtPosition({ x: rect.left, y: rect.bottom });
   }
   openFormatMenu() {
     const current = this.format();
