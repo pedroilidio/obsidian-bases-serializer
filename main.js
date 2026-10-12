@@ -271,7 +271,6 @@ var SerializerView = class extends import_obsidian.BasesView {
   constructor(controller, containerEl) {
     super(controller);
     this.type = VIEW_TYPE;
-    this.iconName = "";
     this.timer = null;
     this.containerEl = containerEl;
     containerEl.empty();
@@ -280,6 +279,7 @@ var SerializerView = class extends import_obsidian.BasesView {
     const split = toolbar.createDiv({ cls: "bases-serializer-split" });
     this.buttonEl = split.createEl("button", { cls: "mod-cta bases-serializer-serialize" });
     this.iconEl = this.buttonEl.createSpan({ cls: "bases-serializer-icon" });
+    (0, import_obsidian.setIcon)(this.iconEl, "snowflake");
     this.labelEl = this.buttonEl.createSpan({ cls: "bases-serializer-label", text: "Serialize now" });
     this.buttonEl.addEventListener("click", () => {
       void this.serialize(true);
@@ -317,7 +317,6 @@ var SerializerView = class extends import_obsidian.BasesView {
       this.previewEl.setText("(no rows)");
     }
     const { embedded } = this.embedInfo();
-    this.updateIcon();
     this.labelEl.setText(embedded ? "Serialize here" : "Serialize now");
     const file = this.targetFile(embedded);
     const where = file ? file.path : embedded ? "no active note" : "no target";
@@ -457,13 +456,6 @@ ${content}` : content;
   key() {
     return String(this.config.get("key") || this.config.name || DEFAULT_KEY);
   }
-  updateIcon() {
-    const want = String(this.config.get("icon") || "file-output");
-    if (want === this.iconName) return;
-    this.iconName = want;
-    this.iconEl.empty();
-    (0, import_obsidian.setIcon)(this.iconEl, want);
-  }
   async removeBlock() {
     const { embedded } = this.embedInfo();
     const file = this.targetFile(embedded);
@@ -528,24 +520,6 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
           type: "group",
           displayName: "Output",
           items: [
-            {
-              type: "dropdown",
-              key: "icon",
-              displayName: "Button icon",
-              default: "file-output",
-              options: {
-                "file-output": "file-output (export)",
-                "file-down": "file-down",
-                "download": "download",
-                "save": "save",
-                "snowflake": "snowflake (freeze)",
-                "camera": "camera (snapshot)",
-                "bookmark": "bookmark",
-                "copy": "copy",
-                "list-checks": "list-checks",
-                "square-stack": "square-stack"
-              }
-            },
             {
               type: "dropdown",
               key: "format",
