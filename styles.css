@@ -107,10 +107,29 @@ select.bases-serializer-format {
   display: none;
 }
 
+.bases-serializer-preview-wrap {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+  margin-top: var(--size-4-2);
+}
+
 .bases-serializer-preview {
   overflow: auto;
-  max-height: 50vh;
-  margin-top: var(--size-4-2);
+  max-height: var(--bases-serializer-preview-height, 50vh);
+  padding: var(--size-4-1) var(--size-4-2);
+}
+
+/* Fade the bottom edge while there is more to scroll */
+.bases-serializer-preview.is-scrollable {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5em), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5em), transparent);
+}
+
+/* Fade both edges once scrolled down */
+.bases-serializer-preview.is-scrollable.is-scrolled {
+  mask-image: linear-gradient(to bottom, transparent, #000 1.5em, #000 calc(100% - 1.5em), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 1.5em, #000 calc(100% - 1.5em), transparent);
 }
 
 .bases-serializer-preview > :first-child {

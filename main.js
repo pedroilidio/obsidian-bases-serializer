@@ -299,7 +299,11 @@ var SerializerView = class extends import_obsidian.BasesView {
     });
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
-    this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview markdown-rendered" });
+    this.previewWrapEl = containerEl.createDiv({ cls: "bases-serializer-preview-wrap" });
+    this.previewEl = this.previewWrapEl.createDiv({ cls: "bases-serializer-preview markdown-rendered" });
+    this.previewEl.addEventListener("scroll", () => {
+      this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
+    });
   }
   onDataUpdated() {
     this.render();
@@ -309,12 +313,24 @@ var SerializerView = class extends import_obsidian.BasesView {
     const format = this.format();
     this.formatEl.value = format;
     const body = this.body();
+    this.previewWrapEl.style.setProperty(
+      "--bases-serializer-preview-height",
+      String(this.config.get("previewHeight") || "50vh")
+    );
     this.previewEl.empty();
+    const finish = () => {
+      this.previewEl.toggleClass(
+        "is-scrollable",
+        this.previewEl.scrollHeight > this.previewEl.clientHeight + 1
+      );
+      this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
+    };
     if (body) {
       const sourcePath = (_b = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.path) != null ? _b : "";
-      void import_obsidian.MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this);
+      void import_obsidian.MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this).then(finish);
     } else {
       this.previewEl.setText("(no rows)");
+      finish();
     }
     const { embedded } = this.embedInfo();
     this.labelEl.setText(embedded ? "Serialize here" : "Serialize now");
@@ -587,6 +603,12 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
             },
             { type: "text", key: "groupTemplate", displayName: "Group template", placeholder: "### {group} ({count})" },
             { type: "text", key: "empty", displayName: "No-results text", placeholder: "e.g. _nothing here_" },
+            {
+              type: "text",
+              key: "previewHeight",
+              displayName: "Preview max height",
+              placeholder: "50vh"
+            },
             { type: "toggle", key: "auto", displayName: "Auto-serialize (embedded)", default: false },
             {
               type: "toggle",

@@ -39,6 +39,7 @@ class SerializerView extends BasesView {
   private buttonEl: HTMLButtonElement;
   private iconEl: HTMLElement;
   private labelEl: HTMLSpanElement;
+  private previewWrapEl: HTMLElement;
   private previewEl: HTMLElement;
   private statusEl: HTMLElement;
   private hintEl: HTMLElement;
@@ -79,7 +80,11 @@ class SerializerView extends BasesView {
 
     this.statusEl = toolbar.createDiv({ cls: "bases-serializer-status" });
     this.hintEl = containerEl.createDiv({ cls: "bases-serializer-hint" });
-    this.previewEl = containerEl.createDiv({ cls: "bases-serializer-preview markdown-rendered" });
+    this.previewWrapEl = containerEl.createDiv({ cls: "bases-serializer-preview-wrap" });
+    this.previewEl = this.previewWrapEl.createDiv({ cls: "bases-serializer-preview markdown-rendered" });
+    this.previewEl.addEventListener("scroll", () => {
+      this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
+    });
   }
 
   onDataUpdated(): void {
@@ -91,12 +96,26 @@ class SerializerView extends BasesView {
     this.formatEl.value = format;
 
     const body = this.body();
+    this.previewWrapEl.style.setProperty(
+      "--bases-serializer-preview-height",
+      String(this.config.get("previewHeight") || "50vh")
+    );
     this.previewEl.empty();
+
+    const finish = () => {
+      this.previewEl.toggleClass(
+        "is-scrollable",
+        this.previewEl.scrollHeight > this.previewEl.clientHeight + 1
+      );
+      this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
+    };
+
     if (body) {
       const sourcePath = this.app.workspace.getActiveFile()?.path ?? "";
-      void MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this);
+      void MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this).then(finish);
     } else {
       this.previewEl.setText("(no rows)");
+      finish();
     }
 
     const { embedded } = this.embedInfo();
@@ -403,6 +422,12 @@ export default class BasesSerializerPlugin extends Plugin {
             },
             { type: "text", key: "groupTemplate", displayName: "Group template", placeholder: "### {group} ({count})" },
             { type: "text", key: "empty", displayName: "No-results text", placeholder: "e.g. _nothing here_" },
+            {
+              type: "text",
+              key: "previewHeight",
+              displayName: "Preview max height",
+              placeholder: "50vh",
+            },
             { type: "toggle", key: "auto", displayName: "Auto-serialize (embedded)", default: false },
             {
               type: "toggle",
