@@ -28,11 +28,21 @@ If the base is open as its own tab, set a **Target note** in the view options an
 ### View options
 - **Target note (standalone views)** — where to write when the view isn't embedded.
 - **Block key** — sentinel key (defaults to the view name).
-- **Format** — `List`, `Checklist`, or `Table`.
-- **Checklist suffix property** — optional property id appended to checklist items (e.g. `note.due`).
+- **Format** — `List`, `Checklist`, `Numbered`, or `Table`.
+- **Link style** — `Wikilink [[Note]]` (default), `Markdown [title](path)`, or `Plain text` (no link).
+- **Line template** — overrides the format; a template per row with placeholders (see below).
+- **Suffix property (checklist / numbered)** — optional property id appended to each item (e.g. `note.due`).
+- **Empty-state text** — shown when there are no rows (default: nothing).
 - **Auto-serialize when embedded** — re-write when the data updates (debounced).
 - **Fully solidify (remove embed and sentinels)** — replace the live `![[base#view]]` with plain Markdown (no embed, no sentinel comments), so the note is fully static (default off).
 - **Group headings (from the Base groupBy)** — when the Base groups rows, emit `### <group>` headings using Bases' grouped results (default on).
+
+#### Line template placeholders
+`{link}`, `{title}`, `{path}`, `{index}`, `{group}`, and any property by its id (`{note.due}`) or display name (`{Due}`) — case-insensitive. Example:
+
+```
+- {link} — {note.due} ({note.status})
+```
 
 ### Button menu
 Next to **Serialize** there's a **▾** menu with one-off actions that override the view options:

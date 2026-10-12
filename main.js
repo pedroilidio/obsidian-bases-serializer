@@ -32,12 +32,41 @@ var import_obsidian = require("obsidian");
 function escapeCell(value) {
   return String(value != null ? value : "").replace(/\|/g, "\\|").replace(/\r?\n/g, " ").trim();
 }
-function renderRow(row, format, suffixIndex) {
-  if (format === "checklist") {
-    const suffix = suffixIndex !== void 0 && row.cells[suffixIndex] ? ` \u2014 ${row.cells[suffixIndex]}` : "";
-    return `- [ ] ${row.link}${suffix}`;
-  }
-  return `- ${row.link}`;
+function suffixFor(row, suffixIndex) {
+  return suffixIndex !== void 0 && row.cells[suffixIndex] ? ` \u2014 ${row.cells[suffixIndex]}` : "";
+}
+function renderTemplate(template, ctx) {
+  const table = {
+    ...ctx.values,
+    link: ctx.link,
+    title: ctx.title,
+    path: ctx.path,
+    index: String(ctx.index),
+    group: ctx.group
+  };
+  return template.replace(/\{([^{}]+)\}/g, (_match, rawKey) => {
+    const key = String(rawKey).trim();
+    if (key in table) return table[key];
+    const found = Object.keys(table).find((candidate) => candidate.toLowerCase() === key.toLowerCase());
+    return found ? table[found] : "";
+  });
+}
+function rowContext(row, index, group) {
+  var _a, _b, _c;
+  return {
+    link: row.link,
+    title: (_a = row.title) != null ? _a : "",
+    path: (_b = row.path) != null ? _b : "",
+    index: index + 1,
+    group: group != null ? group : "",
+    values: (_c = row.values) != null ? _c : {}
+  };
+}
+function renderRow(row, format, suffixIndex, index = 0) {
+  const suffix = suffixFor(row, suffixIndex);
+  if (format === "checklist") return `- [ ] ${row.link}${suffix}`;
+  if (format === "numbered") return `${index + 1}. ${row.link}${suffix}`;
+  return `- ${row.link}${suffix}`;
 }
 function renderTable(rows, headers = []) {
   var _a, _b;
@@ -49,15 +78,19 @@ function renderTable(rows, headers = []) {
   );
   return [header, divider, ...body].join("\n");
 }
-function renderRows(rows, format = "list", suffixIndex, headers = []) {
+function renderRows(rows, format = "list", suffixIndex, headers = [], template, group) {
   if (rows.length === 0) return "";
+  if (template) {
+    return rows.map((row, index) => renderTemplate(template, rowContext(row, index, group))).join("\n");
+  }
   if (format === "table") return renderTable(rows, headers);
-  return rows.map((row) => renderRow(row, format, suffixIndex)).join("\n");
+  return rows.map((row, index) => renderRow(row, format, suffixIndex, index)).join("\n");
 }
-function renderGroups(groups, format = "list", suffixIndex, headers = []) {
+function renderGroups(groups, format = "list", suffixIndex, headers = [], template) {
+  var _a;
   const parts = [];
   for (const group of groups) {
-    const body = renderRows(group.rows, format, suffixIndex, headers);
+    const body = renderRows(group.rows, format, suffixIndex, headers, template, (_a = group.title) != null ? _a : void 0);
     if (!body) continue;
     parts.push(group.title ? `### ${group.title}
 
@@ -204,15 +237,29 @@ var SerializerView = class extends import_obsidian.BasesView {
   }
   row(entry) {
     const order = this.config.getOrder();
+    const cells = order.map((property) => this.cell(entry, property));
+    const values = {};
+    order.forEach((property, index) => {
+      values[property] = cells[index];
+      values[this.config.getDisplayName(property)] = cells[index];
+    });
     return {
       link: this.link(entry),
-      cells: order.map((property) => this.cell(entry, property))
+      cells,
+      title: entry.file.basename,
+      path: entry.file.path,
+      values
     };
   }
   rows() {
     return this.data.data.map((entry) => this.row(entry));
   }
   link(entry) {
+    const style = String(this.config.get("linkStyle") || "wikilink");
+    if (style === "none") return entry.file.basename;
+    if (style === "markdown") {
+      return `[${entry.file.basename}](${entry.file.path.replace(/ /g, "%20")})`;
+    }
     try {
       return this.app.fileManager.generateMarkdownLink(entry.file, "");
     } catch (e) {
@@ -230,20 +277,24 @@ var SerializerView = class extends import_obsidian.BasesView {
     const format = this.config.get("format") || "list";
     const order = this.config.getOrder();
     const suffixProperty = this.config.get("suffix");
+    const template = String(this.config.get("template") || "") || void 0;
     let suffixIndex;
-    if (format === "checklist" && typeof suffixProperty === "string" && suffixProperty) {
+    if ((format === "checklist" || format === "numbered") && typeof suffixProperty === "string" && suffixProperty) {
       const index = order.indexOf(suffixProperty);
       if (index >= 0) suffixIndex = index;
     }
     const headers = this.headers();
+    let rendered;
     if (Boolean(this.config.get("group")) && this.data.groupedData.some((group) => group.hasKey())) {
       const groups = this.data.groupedData.map((group) => ({
         title: group.hasKey() && group.key ? group.key.toString() : null,
         rows: group.entries.map((entry) => this.row(entry))
       }));
-      return renderGroups(groups, format, suffixIndex, headers);
+      rendered = renderGroups(groups, format, suffixIndex, headers, template);
+    } else {
+      rendered = renderRows(this.rows(), format, suffixIndex, headers, template);
     }
-    return renderRows(this.rows(), format, suffixIndex, headers);
+    return rendered.trim() ? rendered : String(this.config.get("empty") || "");
   }
   targetFile(embedded) {
     if (embedded) {
@@ -332,13 +383,32 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
           key: "format",
           displayName: "Format",
           default: "list",
-          options: { list: "List", checklist: "Checklist", table: "Table" }
+          options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" }
+        },
+        {
+          type: "dropdown",
+          key: "linkStyle",
+          displayName: "Link style",
+          default: "wikilink",
+          options: { wikilink: "Wikilink [[Note]]", markdown: "Markdown [title](path)", none: "Plain text" }
+        },
+        {
+          type: "text",
+          key: "template",
+          displayName: "Line template (overrides format)",
+          placeholder: "- {link} \u2014 {note.due}"
         },
         {
           type: "text",
           key: "suffix",
-          displayName: "Checklist suffix property",
+          displayName: "Suffix property (checklist / numbered)",
           placeholder: "note.due"
+        },
+        {
+          type: "text",
+          key: "empty",
+          displayName: "Empty-state text",
+          placeholder: "e.g. _nothing here_"
         },
         {
           type: "toggle",

@@ -16,8 +16,32 @@ describe("renderRows", () => {
     expect(renderRows(rows, "checklist", 0)).toBe("- [ ] [[A]] — 2026-10-13\n- [ ] [[B]]");
   });
 
+  it("renders a numbered list", () => {
+    expect(renderRows(rows, "numbered")).toBe("1. [[A]]\n2. [[B]]");
+  });
+
   it("returns an empty string for no rows", () => {
     expect(renderRows([], "list")).toBe("");
+  });
+});
+
+describe("renderTemplate", () => {
+  const row: SerializedRow = {
+    link: "[[A]]",
+    cells: ["2026-10-13"],
+    title: "A",
+    path: "Notes/A.md",
+    values: { "note.due": "2026-10-13", Due: "2026-10-13" },
+  };
+
+  it("substitutes tokens (case-insensitive), index and group", () => {
+    const out = renderRows([row], "list", undefined, [], "{index}. {link} — {due}");
+    expect(out).toBe("1. [[A]] — 2026-10-13");
+  });
+
+  it("supports the group token via renderGroups", () => {
+    const out = renderGroups([{ title: "Today", rows: [row] }], "list", undefined, [], "{group}: {link}");
+    expect(out).toContain("### Today\n\nToday: [[A]]");
   });
 });
 

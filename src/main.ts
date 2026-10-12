@@ -13,7 +13,6 @@ import {
 
 import { Format, SerializedRow, renderGroups, renderRows } from "./render";
 import { solidifyAnchorToText, stripBlock, upsertBlock, upsertBlockAfterAnchor } from "./sentinels";
-
 const VIEW_TYPE = "bases-serializer";
 const DEFAULT_KEY = "default";
 
@@ -86,9 +85,18 @@ class SerializerView extends BasesView {
 
   private row(entry: BasesEntry): SerializedRow {
     const order = this.config.getOrder();
+    const cells = order.map((property) => this.cell(entry, property));
+    const values: Record<string, string> = {};
+    order.forEach((property, index) => {
+      values[property] = cells[index];
+      values[this.config.getDisplayName(property)] = cells[index];
+    });
     return {
       link: this.link(entry),
-      cells: order.map((property) => this.cell(entry, property)),
+      cells,
+      title: entry.file.basename,
+      path: entry.file.path,
+      values,
     };
   }
 
@@ -97,6 +105,11 @@ class SerializerView extends BasesView {
   }
 
   private link(entry: BasesEntry): string {
+    const style = String(this.config.get("linkStyle") || "wikilink");
+    if (style === "none") return entry.file.basename;
+    if (style === "markdown") {
+      return `[${entry.file.basename}](${entry.file.path.replace(/ /g, "%20")})`;
+    }
     try {
       return this.app.fileManager.generateMarkdownLink(entry.file, "");
     } catch {
@@ -117,24 +130,32 @@ class SerializerView extends BasesView {
     const format = (this.config.get("format") as Format) || "list";
     const order = this.config.getOrder();
     const suffixProperty = this.config.get("suffix");
+    const template = String(this.config.get("template") || "") || undefined;
 
     let suffixIndex: number | undefined;
-    if (format === "checklist" && typeof suffixProperty === "string" && suffixProperty) {
+    if (
+      (format === "checklist" || format === "numbered") &&
+      typeof suffixProperty === "string" &&
+      suffixProperty
+    ) {
       const index = order.indexOf(suffixProperty as BasesPropertyId);
       if (index >= 0) suffixIndex = index;
     }
 
     const headers = this.headers();
+    let rendered: string;
 
     if (Boolean(this.config.get("group")) && this.data.groupedData.some((group) => group.hasKey())) {
       const groups = this.data.groupedData.map((group) => ({
         title: group.hasKey() && group.key ? group.key.toString() : null,
         rows: group.entries.map((entry) => this.row(entry)),
       }));
-      return renderGroups(groups, format, suffixIndex, headers);
+      rendered = renderGroups(groups, format, suffixIndex, headers, template);
+    } else {
+      rendered = renderRows(this.rows(), format, suffixIndex, headers, template);
     }
 
-    return renderRows(this.rows(), format, suffixIndex, headers);
+    return rendered.trim() ? rendered : String(this.config.get("empty") || "");
   }
 
   private targetFile(embedded: boolean): TFile | null {
@@ -247,13 +268,32 @@ export default class BasesSerializerPlugin extends Plugin {
           key: "format",
           displayName: "Format",
           default: "list",
-          options: { list: "List", checklist: "Checklist", table: "Table" },
+          options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" },
+        },
+        {
+          type: "dropdown",
+          key: "linkStyle",
+          displayName: "Link style",
+          default: "wikilink",
+          options: { wikilink: "Wikilink [[Note]]", markdown: "Markdown [title](path)", none: "Plain text" },
+        },
+        {
+          type: "text",
+          key: "template",
+          displayName: "Line template (overrides format)",
+          placeholder: "- {link} — {note.due}",
         },
         {
           type: "text",
           key: "suffix",
-          displayName: "Checklist suffix property",
+          displayName: "Suffix property (checklist / numbered)",
           placeholder: "note.due",
+        },
+        {
+          type: "text",
+          key: "empty",
+          displayName: "Empty-state text",
+          placeholder: "e.g. _nothing here_",
         },
         {
           type: "toggle",
