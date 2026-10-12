@@ -103,6 +103,12 @@
   box-shadow: none;
 }
 
+.bases-serializer-format-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
 .bases-serializer-format-label {
   flex: 1;
   text-align: left;

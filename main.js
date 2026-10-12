@@ -299,6 +299,7 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.formatBtn = toolbar.createEl("button", { cls: "bases-serializer-format" });
     this.formatBtn.setAttribute("aria-label", "Format");
     this.formatBtn.setAttribute("title", "Format");
+    this.formatIconEl = this.formatBtn.createSpan({ cls: "bases-serializer-format-icon" });
     this.formatLabelEl = this.formatBtn.createSpan({ cls: "bases-serializer-format-label" });
     (0, import_obsidian.setIcon)(this.formatBtn.createSpan({ cls: "bases-serializer-format-caret" }), "chevron-down");
     this.formatBtn.addEventListener("click", () => this.openFormatMenu());
@@ -314,9 +315,10 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.render();
   }
   render() {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const format = this.format();
-    this.formatLabelEl.setText((_a = FORMAT_LABELS[format]) != null ? _a : format);
+    (0, import_obsidian.setIcon)(this.formatIconEl, (_a = FORMAT_ICONS[format]) != null ? _a : "list");
+    this.formatLabelEl.setText((_b = FORMAT_LABELS[format]) != null ? _b : format);
     const body = this.body();
     this.previewWrapEl.style.setProperty(
       "--bases-serializer-preview-height",
@@ -331,7 +333,7 @@ var SerializerView = class extends import_obsidian.BasesView {
       this.previewEl.toggleClass("is-scrolled", this.previewEl.scrollTop > 2);
     };
     if (body) {
-      const sourcePath = (_c = (_b = this.app.workspace.getActiveFile()) == null ? void 0 : _b.path) != null ? _c : "";
+      const sourcePath = (_d = (_c = this.app.workspace.getActiveFile()) == null ? void 0 : _c.path) != null ? _d : "";
       void import_obsidian.MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this).then(finish);
     } else {
       this.previewEl.setText("(no rows)");

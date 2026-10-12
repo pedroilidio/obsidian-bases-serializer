@@ -53,6 +53,7 @@ class SerializerView extends BasesView {
   private statusEl: HTMLElement;
   private hintEl: HTMLElement;
   private formatBtn: HTMLButtonElement;
+  private formatIconEl: HTMLElement;
   private formatLabelEl: HTMLSpanElement;
   private menuBtnEl: HTMLButtonElement;
   private containerEl: HTMLElement;
@@ -82,6 +83,7 @@ class SerializerView extends BasesView {
     this.formatBtn = toolbar.createEl("button", { cls: "bases-serializer-format" });
     this.formatBtn.setAttribute("aria-label", "Format");
     this.formatBtn.setAttribute("title", "Format");
+    this.formatIconEl = this.formatBtn.createSpan({ cls: "bases-serializer-format-icon" });
     this.formatLabelEl = this.formatBtn.createSpan({ cls: "bases-serializer-format-label" });
     setIcon(this.formatBtn.createSpan({ cls: "bases-serializer-format-caret" }), "chevron-down");
     this.formatBtn.addEventListener("click", () => this.openFormatMenu());
@@ -101,6 +103,7 @@ class SerializerView extends BasesView {
 
   private render(): void {
     const format = this.format();
+    setIcon(this.formatIconEl, FORMAT_ICONS[format] ?? "list");
     this.formatLabelEl.setText(FORMAT_LABELS[format] ?? format);
 
     const body = this.body();
