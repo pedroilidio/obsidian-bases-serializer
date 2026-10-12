@@ -4,6 +4,7 @@ import {
   BasesPropertyId,
   BasesView,
   MarkdownRenderer,
+  MarkdownView,
   Menu,
   Notice,
   Plugin,
@@ -43,6 +44,9 @@ const FORMAT_ICONS: Record<Format, string> = {
 function countLabel(count: number): string {
   return `${count} row${count === 1 ? "" : "s"}`;
 }
+
+/** Live Serializer views, so the plugin can act on the active one via a command. */
+const liveViews = new Set<SerializerView>();
 
 class SerializerView extends BasesView {
   type = VIEW_TYPE;
@@ -97,6 +101,16 @@ class SerializerView extends BasesView {
     const resizeObserver = new ResizeObserver(() => this.updateScrollState());
     this.register(() => resizeObserver.disconnect());
     resizeObserver.observe(this.previewEl);
+
+    liveViews.add(this);
+    this.register(() => liveViews.delete(this));
+  }
+
+  /** Whether this view is rendered inside the active note (embedded or standalone). */
+  isActive(): boolean {
+    if (!this.containerEl.isConnected) return false;
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+    return view ? view.containerEl.contains(this.containerEl) : false;
   }
 
   /** Refresh the fade classes: bottom fade when scrollable, both edges once scrolled. */
@@ -536,5 +550,18 @@ export default class BasesSerializerPlugin extends Plugin {
     if (!registered) {
       new Notice("Bases Serializer: Bases is not enabled in this vault");
     }
+
+    this.addCommand({
+      id: "serialize-active",
+      name: "Serialize the base in the active note",
+      callback: () => {
+        const view = [...liveViews].find((candidate) => candidate.isActive());
+        if (!view) {
+          new Notice("Bases Serializer: no Serializer base in the active note");
+          return;
+        }
+        void view.serialize(true);
+      },
+    });
   }
 }

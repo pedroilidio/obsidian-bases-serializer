@@ -275,6 +275,7 @@ var FORMAT_ICONS = {
 function countLabel(count) {
   return `${count} row${count === 1 ? "" : "s"}`;
 }
+var liveViews = /* @__PURE__ */ new Set();
 var SerializerView = class extends import_obsidian.BasesView {
   constructor(controller, containerEl) {
     super(controller);
@@ -311,6 +312,14 @@ var SerializerView = class extends import_obsidian.BasesView {
     const resizeObserver = new ResizeObserver(() => this.updateScrollState());
     this.register(() => resizeObserver.disconnect());
     resizeObserver.observe(this.previewEl);
+    liveViews.add(this);
+    this.register(() => liveViews.delete(this));
+  }
+  /** Whether this view is rendered inside the active note (embedded or standalone). */
+  isActive() {
+    if (!this.containerEl.isConnected) return false;
+    const view = this.app.workspace.getActiveViewOfType(import_obsidian.MarkdownView);
+    return view ? view.containerEl.contains(this.containerEl) : false;
   }
   /** Refresh the fade classes: bottom fade when scrollable, both edges once scrolled. */
   updateScrollState() {
@@ -703,5 +712,17 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
     if (!registered) {
       new import_obsidian.Notice("Bases Serializer: Bases is not enabled in this vault");
     }
+    this.addCommand({
+      id: "serialize-active",
+      name: "Serialize the base in the active note",
+      callback: () => {
+        const view = [...liveViews].find((candidate) => candidate.isActive());
+        if (!view) {
+          new import_obsidian.Notice("Bases Serializer: no Serializer base in the active note");
+          return;
+        }
+        void view.serialize(true);
+      }
+    });
   }
 };

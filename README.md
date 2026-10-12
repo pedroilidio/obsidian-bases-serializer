@@ -27,9 +27,16 @@ tools. **Bases Serializer** writes the current result as ordinary Markdown, so:
 
 Re-run it any time to update the block in place.
 
-<p align="center">
-  <img src="assets/preview.png" width="760" alt="The Serializer view in a base tab: the toolbar, the live preview, and the status line" />
-</p>
+<table>
+  <tr>
+    <td width="50%"><img src="./assets/before.png" alt="A note containing a single base embed: ![[tasks.base#Today]]" /></td>
+    <td width="50%"><img src="./assets/after.png" alt="The same note after Serialize: the embed replaced by frozen Markdown" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Before</b> — a live base embed</sub></td>
+    <td align="center"><sub><b>After</b> — real, static Markdown</sub></td>
+  </tr>
+</table>
 
 ## Install
 
@@ -63,6 +70,8 @@ of truth: change the base, re-serialize, the note updates.
 3. Click **❄ Serialize now**. The block is written to that note — under the
    heading if you set one, otherwise appended at the end.
 
+![The Serializer view in a base tab: the toolbar, the live preview, and the status line](./assets/preview.png)
+
 ## The toolbar
 
 | Control | What it does |
@@ -77,6 +86,7 @@ of truth: change the base, re-serialize, the note updates.
 - **Narrow panes.** When the view is squeezed, the button labels collapse to
   icons (matching the native Bases toolbar), and the status text ellipsizes.
 - **Copy Markdown** confirms with a toast.
+- **Command.** *Serialize the base in the active note* does the same as the button, for whichever Serializer base is in the current note — handy as a hotkey or for automation.
 
 ![The ▾ menu: Copy Markdown, Open target note, Remove serialized block](./assets/actions-menu.png)
 
