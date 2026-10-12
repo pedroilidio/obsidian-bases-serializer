@@ -591,7 +591,7 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
   async onload() {
     const registered = this.registerBasesView(VIEW_TYPE, {
       name: "Serializer",
-      icon: "file-output",
+      icon: "snowflake",
       factory: (controller, containerEl) => new SerializerView(controller, containerEl),
       options: () => [
         {

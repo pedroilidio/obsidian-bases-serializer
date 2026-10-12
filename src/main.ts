@@ -422,7 +422,7 @@ export default class BasesSerializerPlugin extends Plugin {
   async onload(): Promise<void> {
     const registered = this.registerBasesView(VIEW_TYPE, {
       name: "Serializer",
-      icon: "file-output",
+      icon: "snowflake",
       factory: (controller, containerEl) => new SerializerView(controller, containerEl),
       options: (): BasesAllOptions[] => [
         {
