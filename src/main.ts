@@ -32,6 +32,12 @@ const FORMATS: Array<[Format, string]> = [
   ["table", "Table"],
 ];
 const FORMAT_LABELS: Record<string, string> = Object.fromEntries(FORMATS);
+const FORMAT_ICONS: Record<Format, string> = {
+  list: "list",
+  checklist: "list-checks",
+  numbered: "list-ordered",
+  table: "table",
+};
 
 function countLabel(count: number): string {
   return `${count} row${count === 1 ? "" : "s"}`;
@@ -271,6 +277,7 @@ class SerializerView extends BasesView {
     for (const [value, label] of FORMATS) {
       menu.addItem((item) => {
         item.setTitle(label);
+        item.setIcon(FORMAT_ICONS[value]);
         item.setChecked(value === current);
         item.onClick(() => {
           this.config.set("format", value);

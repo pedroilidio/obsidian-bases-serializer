@@ -266,6 +266,12 @@ var FORMATS = [
   ["table", "Table"]
 ];
 var FORMAT_LABELS = Object.fromEntries(FORMATS);
+var FORMAT_ICONS = {
+  list: "list",
+  checklist: "list-checks",
+  numbered: "list-ordered",
+  table: "table"
+};
 function countLabel(count) {
   return `${count} row${count === 1 ? "" : "s"}`;
 }
@@ -464,6 +470,7 @@ ${content}` : content;
     for (const [value, label] of FORMATS) {
       menu.addItem((item) => {
         item.setTitle(label);
+        item.setIcon(FORMAT_ICONS[value]);
         item.setChecked(value === current);
         item.onClick(() => {
           this.config.set("format", value);
