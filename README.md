@@ -88,6 +88,10 @@ of truth: change the base, re-serialize, the note updates.
 - **Copy Markdown** confirms with a toast.
 - **Command.** *Serialize the base in the active note* does the same as the button, for whichever Serializer base is in the current note — handy as a hotkey or for automation.
 
+![The ▾ menu: Copy Markdown, Open target note, Remove serialized block](./assets/actions-menu.png)
+
+![The Format picker: Default (Checklist) plus List, Checklist, Numbered, Table](./assets/format-menu.png)
+
 ## View options
 
 ### Standalone
