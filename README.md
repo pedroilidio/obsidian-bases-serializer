@@ -34,7 +34,7 @@ Re-run it any time to update the block in place.
   </tr>
   <tr>
     <td align="center"><sub><b>Before</b> — a live base embed</sub></td>
-    <td align="center"><sub><b>After</b> — real, static Markdown</sub></td>
+    <td align="center"><sub><b>After</b> — frozen Markdown, groups and all</sub></td>
   </tr>
 </table>
 
@@ -87,10 +87,6 @@ of truth: change the base, re-serialize, the note updates.
   icons (matching the native Bases toolbar), and the status text ellipsizes.
 - **Copy Markdown** confirms with a toast.
 - **Command.** *Serialize the base in the active note* does the same as the button, for whichever Serializer base is in the current note — handy as a hotkey or for automation.
-
-![The ▾ menu: Copy Markdown, Open target note, Remove serialized block](./assets/actions-menu.png)
-
-![The Format picker: Default (Numbered) plus List, Checklist, Numbered, Table](./assets/format-menu.png)
 
 ## View options
 
