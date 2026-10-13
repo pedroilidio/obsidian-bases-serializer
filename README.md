@@ -161,6 +161,9 @@ Pure logic lives in `src/sentinels.ts` (block upsert/strip/freeze) and
 `src/render.ts` (formats, templates, groups) with **no Obsidian imports**, so it
 is unit-tested without the app. The Bases view wrapper lives in `src/main.ts`.
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a guided tour — the file map, the data
+flow, how to add a format or an option, and the traps worth knowing about.
+
 ## Notes & limitations
 
 - Requires Obsidian **1.10.0+** (the public Bases API). `QueryController` is
