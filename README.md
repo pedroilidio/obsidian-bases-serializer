@@ -181,6 +181,14 @@ If Bases Serializer saves you time, you can buy me a coffee — it keeps the ❄
   <a href="https://www.buymeacoffee.com/pcbilidiov"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" width="180" /></a>
 </p>
 
+## Acknowledgements
+
+The code was written in pair-programming sessions with an AI assistant —
+**OpenCode** driving **DeepSeek V4.1 Flash** — under my direction. The design, scope,
+trade-offs and every product decision are mine; the implementation was largely the
+assistant's. `ARCHITECTURE.md` is the map I use to maintain it, and changes authored
+by the assistant carry an `Assisted-by:` trailer in git.
+
 ## License
 
 [MIT](LICENSE)
