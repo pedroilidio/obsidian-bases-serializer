@@ -1,7 +1,7 @@
 {
   "id": "bases-serializer",
   "name": "Bases Serializer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minAppVersion": "1.10.0",
   "description": "Serialize a Bases view into static Markdown, wrapped in sentinel comments so it can be refreshed in place.",
   "author": "Pedro Ilídio",

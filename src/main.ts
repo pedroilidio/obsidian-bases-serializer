@@ -27,19 +27,33 @@ const VIEW_TYPE = "bases-serializer";
 const DEFAULT_KEY = "default";
 /** Extra gap (px) between a control and its menu; `Menu` adds 2px on top. */
 const MENU_GAP = 2;
-const FORMATS: Array<[Format, string]> = [
-  ["list", "List"],
-  ["checklist", "Checklist"],
-  ["numbered", "Numbered"],
-  ["table", "Table"],
+interface FormatOption {
+  value: Format;
+  label: string;
+  icon: string;
+}
+
+const FORMATS: FormatOption[] = [
+  { value: "list", label: "List", icon: "list" },
+  { value: "checklist", label: "Checklist", icon: "list-checks" },
+  { value: "numbered", label: "Numbered", icon: "list-ordered" },
+  { value: "table", label: "Table", icon: "table" },
 ];
-const FORMAT_LABELS: Record<string, string> = Object.fromEntries(FORMATS);
-const FORMAT_ICONS: Record<Format, string> = {
-  list: "list",
-  checklist: "list-checks",
-  numbered: "list-ordered",
-  table: "table",
-};
+
+function formatLabel(format: Format): string {
+  return FORMATS.find((option) => option.value === format)?.label ?? format;
+}
+
+function formatIcon(format: Format): string {
+  return FORMATS.find((option) => option.value === format)?.icon ?? "list";
+}
+
+/** `{ value: label }` map for the view options dropdown. */
+function formatOptions(): Record<string, string> {
+  const options: Record<string, string> = {};
+  for (const option of FORMATS) options[option.value] = option.label;
+  return options;
+}
 
 function countLabel(count: number): string {
   return `${count} row${count === 1 ? "" : "s"}`;
@@ -128,11 +142,11 @@ class SerializerView extends BasesView {
 
   private render(): void {
     const format = this.format();
-    const formatLabel = FORMAT_LABELS[format] ?? format;
-    setIcon(this.formatIconEl, FORMAT_ICONS[format] ?? "list");
-    this.formatLabelEl.setText(formatLabel);
-    this.formatBtn.setAttribute("title", `Format: ${formatLabel}`);
-    this.formatBtn.setAttribute("aria-label", `Format: ${formatLabel}`);
+    const label = formatLabel(format);
+    setIcon(this.formatIconEl, formatIcon(format));
+    this.formatLabelEl.setText(label);
+    this.formatBtn.setAttribute("title", `Format: ${label}`);
+    this.formatBtn.setAttribute("aria-label", `Format: ${label}`);
 
     const body = this.body();
     this.previewWrapEl.style.setProperty(
@@ -316,16 +330,16 @@ class SerializerView extends BasesView {
     const menu = new Menu();
     menu.addItem((item) =>
       item
-        .setTitle(`Default (${FORMAT_LABELS[base] ?? base})`)
+        .setTitle(`Default (${formatLabel(base)})`)
         .setIcon("settings-2")
         .setChecked(!override)
         .onClick(() => this.setFormatOverride(""))
     );
     menu.addSeparator();
-    for (const [value, label] of FORMATS) {
+    for (const { value, label, icon } of FORMATS) {
       menu.addItem((item) => {
         item.setTitle(label);
-        item.setIcon(FORMAT_ICONS[value]);
+        item.setIcon(icon);
         item.setChecked(override === value);
         item.onClick(() => this.setFormatOverride(value));
       });
@@ -467,7 +481,7 @@ export default class BasesSerializerPlugin extends Plugin {
               key: "format",
               displayName: "Default format",
               default: "list",
-              options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" },
+              options: formatOptions(),
             },
             {
               type: "dropdown",

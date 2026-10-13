@@ -5,6 +5,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-13
+
+### Fixed
+
+- Removed the `builtin-modules` build dependency; the esbuild config now uses
+  Node's built-in `node:module`, as the community review recommends.
+- Cleared the two remaining TypeScript lint warnings from the community review
+  (unsafe `any` assignment/call) by dropping `Object.fromEntries` from the
+  format table.
+
+### Changed
+
+- The format table is now one typed list of `{ value, label, icon }` entries,
+  replacing the tuple list plus two lookup maps.
+
 ## [0.1.0] - 2026-10-13
 
 Initial release.
@@ -49,5 +64,6 @@ in place.
 - Read-only with respect to the notes it queries — it only ever writes the target
   note.
 
-[Unreleased]: https://github.com/pedroilidio/obsidian-bases-serializer/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/pedroilidio/obsidian-bases-serializer/compare/0.1.1...HEAD
+[0.1.1]: https://github.com/pedroilidio/obsidian-bases-serializer/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/pedroilidio/obsidian-bases-serializer/releases/tag/0.1.0

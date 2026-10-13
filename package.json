@@ -9,12 +9,15 @@
     "typecheck": "tsc --noEmit --skipLibCheck",
     "test": "vitest run"
   },
-  "keywords": ["obsidian", "bases", "markdown"],
+  "keywords": [
+    "obsidian",
+    "bases",
+    "markdown"
+  ],
   "author": "Pedro Ilídio",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.14.0",
-    "builtin-modules": "^3.3.0",
     "esbuild": "^0.24.0",
     "obsidian": "^1.10.0",
     "tslib": "^2.7.0",

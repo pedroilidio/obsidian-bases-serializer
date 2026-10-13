@@ -260,18 +260,24 @@ var VIEW_TYPE = "bases-serializer";
 var DEFAULT_KEY = "default";
 var MENU_GAP = 2;
 var FORMATS = [
-  ["list", "List"],
-  ["checklist", "Checklist"],
-  ["numbered", "Numbered"],
-  ["table", "Table"]
+  { value: "list", label: "List", icon: "list" },
+  { value: "checklist", label: "Checklist", icon: "list-checks" },
+  { value: "numbered", label: "Numbered", icon: "list-ordered" },
+  { value: "table", label: "Table", icon: "table" }
 ];
-var FORMAT_LABELS = Object.fromEntries(FORMATS);
-var FORMAT_ICONS = {
-  list: "list",
-  checklist: "list-checks",
-  numbered: "list-ordered",
-  table: "table"
-};
+function formatLabel(format) {
+  var _a, _b;
+  return (_b = (_a = FORMATS.find((option) => option.value === format)) == null ? void 0 : _a.label) != null ? _b : format;
+}
+function formatIcon(format) {
+  var _a, _b;
+  return (_b = (_a = FORMATS.find((option) => option.value === format)) == null ? void 0 : _a.icon) != null ? _b : "list";
+}
+function formatOptions() {
+  const options = {};
+  for (const option of FORMATS) options[option.value] = option.label;
+  return options;
+}
 function countLabel(count) {
   return `${count} row${count === 1 ? "" : "s"}`;
 }
@@ -333,13 +339,13 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.render();
   }
   render() {
-    var _a, _b, _c, _d;
+    var _a, _b;
     const format = this.format();
-    const formatLabel = (_a = FORMAT_LABELS[format]) != null ? _a : format;
-    (0, import_obsidian.setIcon)(this.formatIconEl, (_b = FORMAT_ICONS[format]) != null ? _b : "list");
-    this.formatLabelEl.setText(formatLabel);
-    this.formatBtn.setAttribute("title", `Format: ${formatLabel}`);
-    this.formatBtn.setAttribute("aria-label", `Format: ${formatLabel}`);
+    const label = formatLabel(format);
+    (0, import_obsidian.setIcon)(this.formatIconEl, formatIcon(format));
+    this.formatLabelEl.setText(label);
+    this.formatBtn.setAttribute("title", `Format: ${label}`);
+    this.formatBtn.setAttribute("aria-label", `Format: ${label}`);
     const body = this.body();
     this.previewWrapEl.style.setProperty(
       "--bases-serializer-preview-height",
@@ -348,7 +354,7 @@ var SerializerView = class extends import_obsidian.BasesView {
     this.previewEl.empty();
     const finish = () => this.updateScrollState();
     if (body) {
-      const sourcePath = (_d = (_c = this.app.workspace.getActiveFile()) == null ? void 0 : _c.path) != null ? _d : "";
+      const sourcePath = (_b = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.path) != null ? _b : "";
       void import_obsidian.MarkdownRenderer.render(this.app, body, this.previewEl, sourcePath, this).then(finish);
     } else {
       this.previewEl.setText("(no rows)");
@@ -498,16 +504,13 @@ ${content}` : content;
     const base = this.baseFormat();
     const menu = new import_obsidian.Menu();
     menu.addItem(
-      (item) => {
-        var _a;
-        return item.setTitle(`Default (${(_a = FORMAT_LABELS[base]) != null ? _a : base})`).setIcon("settings-2").setChecked(!override).onClick(() => this.setFormatOverride(""));
-      }
+      (item) => item.setTitle(`Default (${formatLabel(base)})`).setIcon("settings-2").setChecked(!override).onClick(() => this.setFormatOverride(""))
     );
     menu.addSeparator();
-    for (const [value, label] of FORMATS) {
+    for (const { value, label, icon } of FORMATS) {
       menu.addItem((item) => {
         item.setTitle(label);
-        item.setIcon(FORMAT_ICONS[value]);
+        item.setIcon(icon);
         item.setChecked(override === value);
         item.onClick(() => this.setFormatOverride(value));
       });
@@ -630,7 +633,7 @@ var BasesSerializerPlugin = class extends import_obsidian.Plugin {
               key: "format",
               displayName: "Default format",
               default: "list",
-              options: { list: "List", checklist: "Checklist", numbered: "Numbered", table: "Table" }
+              options: formatOptions()
             },
             {
               type: "dropdown",
