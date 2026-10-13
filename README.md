@@ -40,16 +40,23 @@ Re-run it any time to update the block in place.
 
 ## Install
 
-**BRAT** (recommended while unreleased)
-1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) and add
-   `pedroilidio/obsidian-bases-serializer`.
+**Settings → Community plugins → Browse → "Bases Serializer"**, or view it in the
+[community directory](https://community.obsidian.md/plugins/bases-serializer).
 
-**Manual**
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](../../releases/latest).
+Requires Obsidian **1.10.0+** with **Bases** enabled.
+
+<details>
+<summary>Manual install / pre-release builds</summary>
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the
+   [latest release](../../releases/latest).
 2. Copy them into `<vault>/.obsidian/plugins/bases-serializer/`.
 3. Enable **Bases Serializer** in *Settings → Community plugins*.
 
-Requires Obsidian **1.10.0+** with **Bases** enabled.
+Or use [BRAT](https://github.com/TfTHacker/obsidian42-brat) with
+`pedroilidio/obsidian-bases-serializer` if you want to track versions ahead of a release.
+
+</details>
 
 ## Quick start
 
